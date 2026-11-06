@@ -925,7 +925,7 @@ function buildRoad() {
   addRoadSurfaceDetails(z.group); addWoodPavement(z.group,27,10.2,18.2,3.3); addMachineComplex(z.group);
   // The farmhouse's false golden window.
   addLight(z.group,0xffb35d,2.1,18,0,2.0,-7,{decay:1.5});
-  const firstPrimo=makeNPC(z.group,-2.15,-5.45,'Il Primo',0x4b463d,1);
+  const firstPrimo=makeNPC(z.group,-2.15,-5.45,'The First',0x4b463d,1);
   firstPrimo.isOpeningPrimo=true;firstPrimo.radius=4.0;firstPrimo.prompt='[ E ] PARLA — IL PRIMO';
   if (firstPrimo.head) firstPrimo.head.material = headMaterial();
   firstPrimo.dialogue={line:'You made it. I am glad. The road is unpleasant once the fog comes down. Come under the porch a moment; you must be cold.',choices:['Thank you. Have you been waiting long?','Do you know why I was called here?','Who are the people inside?'],replies:['Not long. I kept the lamp on because a person should not have to arrive at a dark door. That is all.','Only what the letter told me. You tune pianos, and you notice when a note is almost right. We have a room that needs that kind of attention.','Neighbours, mostly. They have been keeping one another company. It is easier to be here when somebody remembers to leave a place for you.']};
@@ -1176,7 +1176,7 @@ function buildAbattoir() {
   for(let i=0;i<6;i++){const chain=new THREE.Mesh(new THREE.CylinderGeometry(.012,.016,.8,6),M.rust);chain.position.set(-8+i*3.2,3.35,3.3);z.group.add(chain);}
   // The room contains manifestos that contradict each other, by design.
   // The cult leader is hidden at the far end; his face is turned away until spoken to.
-  const leader=makeNPC(z.group,0,-7.2,'Il Primo',0x171716,1);leader.object.rotation.y=Math.PI; if (leader.head) leader.head.material = headMaterial();leader.dialogue={line:'Non sono il capo. Sono il primo che ha capito che la stanza non era vuota: eravamo noi a occupare troppo spazio.',choices:['Togli il nastro.','Dammi il tuo posto.'],replies:['Non c’è nastro da togliere. La macchina gira senza bobina.','Il posto non è mio. È quello che resta quando rinunci al tuo nome.']};
+  const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI; if (leader.head) leader.head.material = headMaterial();leader.dialogue={line:'Non sono il capo. Sono il primo che ha capito che la stanza non era vuota: eravamo noi a occupare troppo spazio.',choices:['Togli il nastro.','Dammi il tuo posto.'],replies:['Non c’è nastro da togliere. La macchina gira senza bobina.','Il posto non è mio. È quello che resta quando rinunci al tuo nome.']};
   const eventMarker=new THREE.Mesh(new THREE.BoxGeometry(.34,.14,.34),M.clue);eventMarker.position.set(0,.12,1.7);z.group.add(eventMarker);
   z.interactables.push({id:'abattoir_ropes',type:'event',object:eventMarker,point:eventMarker.position,radius:3.0,prompt:'[ E ] SCEGLI COSA FARE AI GANCI',run:()=>{
     controls.unlock();dialogueOpen=true;$('speaker').textContent='IL LOCALE / I QUATTRO CORPI';$('subtitle').textContent='Le catene sono in tensione. Una voce arriva dal pavimento: «Se li liberi, la stanza resta senza testimoni. Se li lasci, diventi parte dell’inventario». Quando guardi di nuovo, uno dei corpi ha cambiato posizione.';speakVoice($('subtitle').textContent,'IL LOCALE');$('subtitle-wrap').classList.add('visible');
@@ -1254,7 +1254,7 @@ function buildCellar() {
   const hanging = makeNPC(z.group, -7.0, -4.9, 'Il cappotto', 0x141614, 1); hanging.object.scale.set(.72, 1.12, .72); hanging.prompt = '[ E ] ESAMINA — IL CAPOTTO';
   hanging.dialogue = { line: 'Le maniche sono ancora calde. Non c’è nessuno dentro.', choices: ['Chi lo ha lasciato?', 'Non toccarlo.'], replies: ['La persona che indossa i vestiti degli altri quando ha freddo.', 'È già stato toccato. Dal lato che non vedi.'] };
   addDoor(z.group, 0, 7.95, 'le scale', 'home', [7.5, 0, -5.2]);
-  const turntableEntry = { id: 'listen', type: 'listen', object: disc, point: disc.position, radius: 3.0, prompt: '[ E ] ASCOLTA IL BIANCO', title: 'Il Bianco' };
+  const turntableEntry = { id: 'listen', type: 'listen', object: disc, point: disc.position, radius: 3.0, prompt: '[ E ] ASCOLTA IL BIANCO', title: 'The White' };
   z.interactables.push(turntableEntry);
   z.mist = addFog(z.group, 18, 22, 0x8d8c7d, 92);
   z.solids.push({ minX: -9, maxX: -8.7, minZ: -8, maxZ: 8 }, { minX: 8.7, maxX: 9, minZ: -8, maxZ: 8 }, { minX: -9, maxX: -4.5, minZ: -8.2, maxZ: -8 }, { minX: 4.5, maxX: 9, minZ: -8.2, maxZ: -8 }, { minX: -9, maxX: -4.6, minZ: 7.7, maxZ: 8 }, { minX: 4.6, maxX: 9, minZ: 7.7, maxZ: 8 });
@@ -1547,8 +1547,8 @@ function chooseDialogue(npc, index) {
   if(lower==='sergio'){storyFlags.add(index===0?'sergio-truth':'sergio-silence');}
   if(lower==='dario'){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
   if(lower==='il primo'&&!npc.isOpeningPrimo){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
-  if(lower==='don remo'||lower==='father remo'){storyFlags.add('talked-remo');if(index===1){storyFlags.add('wick-truth');refreshCandlePrompts();showToast('THE ALTAR IS A FUSE. BREAK THE THREE WICKS.');}}
-  if(lower==='la vedova'||lower==='the widow')storyFlags.add('talked-widow');
+  if(lower==='father remo'||lower==='father remo'){storyFlags.add('talked-remo');if(index===1){storyFlags.add('wick-truth');refreshCandlePrompts();showToast('THE ALTAR IS A FUSE. BREAK THE THREE WICKS.');}}
+  if(lower==='the widow'||lower==='the widow')storyFlags.add('talked-widow');
   if(lower==='ottavio'){storyFlags.add('talked-ottavio');if(index===1)storyFlags.add('ottavio-audio');}
   if(lower==='anna')storyFlags.add(index===0?'anna-mercy':'anna-table');
   $('subtitle').textContent = reply; speakVoice(reply,npc.name); $('dialogue-options').innerHTML = '<button class="dialogue-option" id="dialogue-end"><b>[↵]</b>Say nothing more.</button>'; 
@@ -1917,7 +1917,7 @@ function updateCandles(t) {
   }
 }
 let candlesBroken=0;
-function refreshCandlePrompts(){candles.forEach(c=>{if(c.entry)c.entry.prompt=storyFlags.has('wick-truth')?'[ E ] BREAK THE WICK':'[ E ] LIGHT THE CANDLE';});}
+function refreshCandlePrompts(){candles.forEach(c=>{for(const z of Object.values(zones)){const entry=z.interactables.find(item=>item.type==='candle'&&item.candle===c);if(entry)entry.prompt=storyFlags.has('wick-truth')?'[ E ] BREAK THE WICK':'[ E ] LIGHT THE CANDLE';}});}
 function lightCandle(c){
  if(c.destroyed)return;
  if(storyFlags.has('wick-truth')){
@@ -1926,7 +1926,7 @@ function lightCandle(c){
   soot.rotation.x=-Math.PI/2;soot.position.y=.006;c.root.add(soot);
   candlesBroken++;glitchPulse=Math.max(glitchPulse,.7);audio?.mechanicalEvent('latch');
   showToast('WICK DESTROYED // '+candlesBroken+' / 3');
-  const list=c.root.parent?.userData?.interactables,ix=list?list.indexOf(c.entry):-1;if(ix>=0)list.splice(ix,1);
+  const list=c.root.parent?.userData?.interactables,entry=list?.find(item=>item.type==='candle'&&item.candle===c),ix=entry?list.indexOf(entry):-1;if(ix>=0)list.splice(ix,1);
   if(candlesBroken===3){
    storyFlags.add('altar-rejected');storyFlags.add('primo-alerted');storyFlags.add('primo-betrayal');
    fear=Math.min(1,fear+.34);audio?.killSting();audio?.mechanicalEvent('bell');
@@ -2163,7 +2163,7 @@ function applyConsequences(npc, index) {
   if (key === 'anna' && index === 1) { queueCultFate('il piatto di Anna', npc, 'collapse'); }
   if (key === 'sergio' && index === 1) { fear = Math.min(1, fear + .05); }
   if (key === 'il primo' && npc.isOpeningPrimo) { storyFlags.add('met-primo'); storyFlags.add('primo-first-contact'); }
-  else if (key === 'il primo') { const d = primoDialogue(); d.actions?.[index]?.(); }
+  else if (key === 'the first') { const d = primoDialogue(); d.actions?.[index]?.(); }
   applyChoiceEffect(key,index,npc);
   if (storyFlags.has('primo-alerted')) placeStalker(currentZone);
   updateMissions();
@@ -2507,7 +2507,7 @@ function buildStory() {
   storyRef.hand = buildHand(); storyRef.hand.position.set(6.5, -1, -12.6); storyRef.hand.visible = false; zones.church.group.add(storyRef.hand);
   zones.church.interactables.push({ id: 'confession', type: 'story', object: booth, point: new THREE.Vector3(6.5, .9, -8.4), radius: 2.4, prompt: '[ E ] ENTER THE CONFESSIONAL', run: startConfession });
   // Il Primo's dialogue is generated from the story so far.
-  const primo = zones.abattoir.interactables.find(i => i.name === 'Il Primo' || /primo/i.test(i.name || ''));
+  const primo = zones.abattoir.interactables.find(i => i.name === 'The First' || /primo/i.test(i.name || ''));
   if (primo) Object.defineProperty(primo, 'dialogue', { get: primoDialogue, configurable: true });
   buildForest();
 }
@@ -2780,8 +2780,8 @@ function difficultyTier() { return Math.min(6, seenMissions.size); }
 function primoSpeedBonus() { return difficultyTier() * .13; }
 // Choices lead to small rewards or penalties; the table is keyed by speaker and choice index.
 function applyChoiceEffect(key,index,npc=null){
- const row=CHOICE_EFFECTS[key];if(!row||!row[index])return;
- const [severity,effect]=row[index].split(':');
+ const row=CHOICE_EFFECTS[key],entry=row?.[index]||null;
+ const [severity,effect]=entry?entry.split(':'):[index>0?'bad':'good','none'];
  if(severity==='bad'){showThirteenDemises(npc);if(npc?.cultist&&npc.fate==='present')queueCultFate('a wrong answer',npc,'collapse');}
   if (effect === 'map') {
     if (storyFlags.has('map')) return; storyFlags.add('map');
