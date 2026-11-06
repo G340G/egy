@@ -948,7 +948,7 @@ function buildRoad() {
   const cemeterySign=new THREE.Mesh(new THREE.PlaneGeometry(2.6,.58),new THREE.MeshBasicMaterial({map:makeLabelTexture('CEMETERY',512,160),transparent:true,side:THREE.DoubleSide}));cemeterySign.position.set(-8.18,1.72,0);cemeterySign.rotation.y=Math.PI/2;cemetery.add(cemeterySign);
   const graves=[[-4,-3],[-.1,-3],[3.9,-3],[-4,1.6],[-.1,1.6],[3.9,1.6]];
   graves.forEach(([gx,gz],i)=>{const mound=new THREE.Mesh(new THREE.SphereGeometry(.9,10,7),mat(0x292820,1,{map:TEX.concrete}));mound.scale.set(1.05,.09,.52);mound.position.set(gx,.065,gz);cemetery.add(mound);const stone=new THREE.Mesh(new THREE.BoxGeometry(.68,.92,.18),M.darkWall);stone.position.set(gx,.52,gz-.66);stone.rotation.z=(i%2?-.055:.04);cemetery.add(stone);addBox(cemetery,gx,.91,gz-.765,.075,.46,.035,M.rust);addBox(cemetery,gx,.84,gz-.765,.34,.065,.04,M.rust);});
-  const marksman=new THREE.Group();marksman.position.set(31.1,4.78,7.2);marksman.rotation.y=-Math.PI/2;z.group.add(marksman);storyRef.cemeteryShooter=marksman;
+  const marksman=new THREE.Group();marksman.position.set(31.1,4.78,7.2);marksman.rotation.y=-Math.PI/2;marksman.visible=false;z.group.add(marksman);storyRef.cemeteryShooter=marksman;
   const shooterBody=new THREE.Mesh(new THREE.CapsuleGeometry(.18,.58,4,7),M.black);shooterBody.position.y=.66;marksman.add(shooterBody);
   const shooterHead=new THREE.Mesh(new THREE.SphereGeometry(.14,8,7),M.black);shooterHead.position.set(0,1.22,.02);marksman.add(shooterHead);
   const rifle=new THREE.Mesh(new THREE.CylinderGeometry(.027,.04,.95,6),M.black);rifle.rotation.z=-Math.PI/2;rifle.position.set(.36,.78,.17);marksman.add(rifle);
@@ -2130,10 +2130,10 @@ function currentMissionText(){
  if(currentZone==='home'&&!storyFlags.has('talked-ottavio'))return 'Speak with Ottavio before examining the Tuning Fork.';
  if(currentZone==='church'&&!storyFlags.has('talked-remo'))return 'Speak with Father Remo before examining the Mass Register.';
  if(currentZone==='ruin'&&!storyFlags.has('talked-widow'))return 'Speak with the Widow before examining the Burned Photograph.';
+ if(storyFlags.has('cemetery-bait')&&!storyFlags.has('cemetery-shot')&&collected.size<clueCount)return 'THE FIRST’S INSTRUCTION: Go to the cemetery beside the industries. Find the missing name.';
  if(collected.size===7)return currentZone==='abattoir'
    ?'7 / 8 CLUES — The slaughterhouse ledger is on the north-west side, near the back wall.'
    :'7 / 8 CLUES — Follow the boardwalk east. The House of Beasts contains the final ledger.';
- if(storyFlags.has('cemetery-bait')&&!storyFlags.has('cemetery-shot')&&collected.size<clueCount)return 'THE FIRST’S INSTRUCTION: Go to the cemetery beside the industries. Find the missing name.';
  if(collected.size>=clueCount&&!storyFlags.has('altar-lit'))return '8 / 8 CLUES — Return to the church and light all three altar candles.';
  if(collected.size>=2&&!storyFlags.has('altar-lit'))return 'LIGHT ALL THREE ALTAR CANDLES — The flames are part of the way forward.';
  if(collected.size>=clueCount){
