@@ -421,6 +421,7 @@ function makeNPC(group,x,z,name,coatColor=0x272725,variant=0){
   if(elder){const grey=new THREE.Mesh(new THREE.SphereGeometry(.105,9,7),mat(0xaaa397,.98));grey.scale.set(1,.34,.7);grey.position.set(.11,2.04,-.015);root.add(grey);}
  }
  const photoMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.84,side:THREE.DoubleSide,depthWrite:false});
+ const photoKey=profile==='woman'?'woman':profile==='oldman'?'oldman':'man';
  const photoFace=new THREE.Mesh(new THREE.PlaneGeometry(.23,.285),photoMat);photoFace.position.set(first?-.055:0,1.91,.205);photoFace.visible=false;root.add(photoFace);
  const mask=new THREE.Mesh(new THREE.BoxGeometry(.25,.06,.025),trim);mask.position.set(first?-.055:0,1.91,.205);mask.visible=false;root.add(mask);
  const leftArm=new THREE.Group();leftArm.position.set(first?-.39:-.31,1.43,0);root.add(leftArm);
@@ -458,7 +459,7 @@ function makeNPC(group,x,z,name,coatColor=0x272725,variant=0){
   const seam=new THREE.Mesh(new THREE.CylinderGeometry(.012,.02,.52,5),M.rust);seam.position.set(.25,.72,.19);seam.rotation.z=-.18;root.add(seam);
   root.rotation.z=-.025;root.scale.set(1.04,1.08,.94);
  }
- const npc={head,id:'npc_'+name.toLowerCase().replace(/[^a-z0-9]+/g,'_'),type:'npc',object:root,point:root.position,radius:3.4,prompt:'[ E ] SPEAK — '+name.toUpperCase(),name,phase:Math.random()*7,coat,leftArm,rightArm,photoFace,photoKey,leftForearm,rightForearm,legs,lowerLegs,shoes,eyes,lids,blinkTimer:1.8+Math.random()*4,blinkAmount:0,walking:false,cultist:false,fate:'present',profile,isFirst};
+ const npc={head,id:'npc_'+name.toLowerCase().replace(/[^a-z0-9]+/g,'_'),type:'npc',object:root,point:root.position,radius:3.4,prompt:'[ E ] SPEAK — '+name.toUpperCase(),name,phase:Math.random()*7,coat:cloth,leftArm,rightArm,photoFace,photoKey,leftForearm,rightForearm,legs,lowerLegs,shoes,eyes,lids,blinkTimer:1.8+Math.random()*4,blinkAmount:0,walking:false,cultist:false,fate:'present',profile,isFirst};
  photoNPCs.push(npc);refreshPhotoNPC(npc);group.userData.interactables.push(npc);return npc;
 }
 
