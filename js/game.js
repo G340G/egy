@@ -284,12 +284,7 @@ function makeFaceCanvas(image, spec) {
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t;
 }
 function refreshPhotoNPC(npc){const key=npc.photoKey,image=PHOTO_IMAGES[key];if(!image)return;const spec=PHOTO_ARCHIVE[key];try{const face=makeFaceCanvas(image,spec);npc.photoFace.material.map?.dispose?.();npc.photoFace.material.map=face;npc.photoFace.material.needsUpdate=true;npc.photoFace.visible=!npc.isFirst;}catch(err){npc.photoFace.visible=false;console.warn('Could not crop archival face:',key,err);}}
-function refreshPhotoNPC(npc) {
-  const key=npc.photoKey, image=PHOTO_IMAGES[key]; if(!image)return;
-  const spec=PHOTO_ARCHIVE[key];
-  try { const face=makeFaceCanvas(image,spec); npc.photoFace.material.map?.dispose?.(); npc.photoFace.material.map=face; npc.photoFace.material.needsUpdate=true; npc.photoFace.visible=true; } catch(err) { npc.photoFace.visible=false; console.warn('Could not crop archival face:',key,err); }
 
-}
 function profileForNPC(name,variant){
  const n=(name||'').toLowerCase();
  if(['ines','anna','vanda','ada','mirella','teresa','woman by the canal','the widow','la donna','la vedova'].some(v=>n.includes(v)))return 'woman';
