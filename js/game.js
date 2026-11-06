@@ -11,7 +11,11 @@ const lowFx = new URLSearchParams(location.search).has('lowfx');
 const candles = [], rituals = [], tools = new Set(), seenMissions = new Set(), chapterCardsShown = new Set();
 let HEAD_TEX = null, JUMP_URL = null, PAINT_TEX = {}, atmo = { zone: null, nodes: [], timers: [], gain: null }, zoomPulse2 = 0;
 const CHOICE_EFFECTS = {
-  ines: ['good:map', 'bad:jumpscare'],
+  ines:['good:map','bad:jumpscare'],
+  'father remo':['bad:closer','good:health'],
+  'don remo':['bad:closer','good:health'],
+  'the widow':['bad:trip','good:key'],
+  'la vedova':['bad:trip','good:key'],
   ottavio: ['bad:trip', 'good:health'],
   sergio: ['good:key', 'bad:closer'],
   dario: ['good:health', 'bad:jumpscare'],
@@ -1076,8 +1080,8 @@ function buildChurch() {
   // Candles and red sanctuary light.
   for (let i = 0; i < 6; i++) { addBox(z.group, -2.1 + i * .85, 2.12, -11.3, .055, .58, .055, M.wood); addLight(z.group, 0xffa35b, .24, 3.2, -2.1 + i * .85, 2.55, -11.3); }
   addLight(z.group, 0x9d3026, 1.7, 12, 0, 4.1, -14.2);
-  const remo = makeNPC(z.group, 1.5, -8.2, 'Don Remo', 0xddd7c9, 1);
-  remo.dialogue = { line: 'La porta non è chiusa. È la stanza a essere dall’altra parte.', choices: ['Che cosa c’è nel disco?', 'Perché la croce è girata?'], replies: ['Un suono che non ha bisogno di essere ascoltato. Un posto che non ha bisogno di essere abitato.', 'Perché la terra guarda il cielo da sotto. Non è una punizione. È una prospettiva.'] };
+  const remo=makeNPC(z.group,1.5,-8.2,'Father Remo',0xddd7c9,1);
+  remo.dialogue={line:'The door is not closed. The room is on the other side. The altar is an instrument, and the candles are its keys.',choices:['What is on the record?','Why has the cross been turned around?'],replies:['A sound that does not need to be heard. A place that does not need to be inhabited.','Because the candles are not a guide. They are a fuse. Break the three wicks before they burn, and The First will hear you.']};
   const bellMarker=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.18),M.clue);bellMarker.position.set(-6.8,.12,-5.8);z.group.add(bellMarker);z.interactables.push({id:'bell_event',type:'event',object:bellMarker,point:bellMarker.position,radius:2.8,prompt:'[ E ] TIRA LA CORDA DELLA CAMPANA',run:()=>{audio?.bell();triggerKillScene();}});
   addClueMesh(z.group,new THREE.Vector3(-5.8,1.7,-13.6),'Mass Register','The page lists a sequence of stations. The numbering jumps from the eleventh to the fourteenth. On the reverse: “no funeral.”','mass','paper',{requiresFlag:'talked-remo',blockedHint:'Speak with Father Remo before examining the Mass Register.'});
   addDoor(z.group,0,11.9,'il sagrato','road',[0,0,-29],false,{style:'roman'});
@@ -1098,8 +1102,8 @@ function buildRuin() {
   addBox(z.group, 4.8, 1.35, -4.8, 1.0, 2.6, 1.2, M.black);
   const staticScreen = new THREE.Mesh(new THREE.PlaneGeometry(.78, .58), new THREE.MeshBasicMaterial({ map: makeLabelTexture('NO SIGNAL', 512, 256), color: 0x8a8b83 })); staticScreen.position.set(4.8, 1.6, -4.16); z.group.add(staticScreen);
   addLight(z.group, 0x9caaa4, .45, 8, -4.5, 2.8, -6.0);
-  const woman = makeNPC(z.group, 1.4, -.5, 'La vedova', 0x2d302e, 0);
-  woman.dialogue = { line: 'Mio marito non è morto. Ha soltanto smesso di rispondere al telefono. Sono passati undici inverni.', choices: ['Perché tieni la luce accesa?', 'Conoscevi la registrazione?'], replies: ['Perché la notte entra dalle prese. La luce la tiene occupata.', 'Il tecnico venne con una valigia vuota. Se ne andò con una canzone che non ricordo.'] };
+  const woman=makeNPC(z.group,1.4,-.5,'The Widow',0x2d302e,0);
+  woman.dialogue={line:'My husband is not dead. He simply stopped answering the telephone. Eleven winters have passed.',choices:['Why do you keep the light on?','Did you know about the recording?'],replies:['Because night comes in through the sockets. The light keeps it busy.','The technician arrived with an empty suitcase. He left with a song I cannot remember.']};
   addClueMesh(z.group,new THREE.Vector3(-2.2,.95,-4.4),'Burned Photograph','A photograph of the church in 1977. In one corner, almost outside the frame, a small gas heater can be seen behind the choir.','photo','paper',{requiresFlag:'talked-widow',blockedHint:'Speak with the Widow before examining the burned photograph.'});
   addClueMesh(z.group,new THREE.Vector3(5.0,.12,1.0),'Answering Machine','An unlabelled microcassette. The tape contains only the click of the REC button and someone inhaling before speaking.','voicemail','metal',{requiresFlag:'talked-widow',blockedHint:'Speak with the Widow before examining the answering-machine tape.'});
   addDoor(z.group, 0, 7.95, 'la strada', 'road', [-28, 0, -2]);
@@ -1894,7 +1898,7 @@ function addCandle(group, x, y, z, lit = true, interactive = false) {
   const flame = new THREE.Mesh(new THREE.SphereGeometry(.024, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffc46a }));
   flame.scale.set(1, 1.7, 1); flame.position.y = .23; root.add(flame);
   const light = new THREE.PointLight(0xffa24a, lit ? .9 : 0, 4.2, 2); light.position.set(0, .3, 0); root.add(light);
-  const c = { root, flame, light, lit, base: .9, phase: Math.random() * 9 };
+  const c={root,wax,flame,light,lit,destroyed:false,base:.9,phase:Math.random()*9};
   candles.push(c);
   if (interactive) {
     const entry = { id: `candle_${x}_${z}`, type: 'candle', object: root, point: root.position, radius: 2.1, prompt: '[ E ] ACCENDI LA CANDELA', candle: c };
@@ -1911,15 +1915,40 @@ function updateCandles(t) {
     c.flame.scale.set(1 + (v - .8) * .3, 1.7 + (v - .8) * .6, 1);
   }
 }
-function lightCandle(c) {
-  if (c.lit) { showToast('LA CANDELA È GIÀ ACCESA.'); return; }
-  c.lit = true; candlesLit++;
-  const list = c.root.parent?.userData?.interactables; const ix = list ? list.indexOf(c.entry) : -1; if (ix >= 0) list.splice(ix, 1);
-  glitchPulse = Math.max(glitchPulse, .3); audio.stinger(.3);
-  showToast(`CANDELE ACCESE: ${candlesLit} / 3`);
-  if (candlesLit >= 3) { storyFlags.add('altar-lit'); showToast('LA NAVATA SI ALZA NELLA LUCE. IL CORO CHIAMA IL PRIMO.'); }
-  updateMissions();
+let candlesBroken=0;
+function refreshCandlePrompts(){candles.forEach(c=>{if(c.entry)c.entry.prompt=storyFlags.has('wick-truth')?'[ E ] BREAK THE WICK':'[ E ] LIGHT THE CANDLE';});}
+function lightCandle(c){
+ if(c.destroyed)return;
+ if(storyFlags.has('wick-truth')){
+  c.destroyed=true;c.lit=false;c.flame.visible=false;c.light.intensity=0;c.wax.material=M.darkWall;c.wax.scale.set(.72,.38,.72);c.root.rotation.z=(Math.random()-.5)*.16;
+  const soot=new THREE.Mesh(new THREE.CircleGeometry(.17,14),new THREE.MeshBasicMaterial({color:0x171310,transparent:true,opacity:.78}));
+  soot.rotation.x=-Math.PI/2;soot.position.y=.006;c.root.add(soot);
+  candlesBroken++;glitchPulse=Math.max(glitchPulse,.7);audio?.mechanicalEvent('latch');
+  showToast('WICK DESTROYED // '+candlesBroken+' / 3');
+  const list=c.root.parent?.userData?.interactables,ix=list?list.indexOf(c.entry):-1;if(ix>=0)list.splice(ix,1);
+  if(candlesBroken===3){
+   storyFlags.add('altar-rejected');storyFlags.add('primo-alerted');storyFlags.add('primo-betrayal');
+   fear=Math.min(1,fear+.34);audio?.killSting();audio?.mechanicalEvent('bell');
+   showToast('THE LAST WICK BREAKS. THE FIRST HEARS YOU.');
+   scheduleCultSceneFates(3,'the broken altar','collapse');placeStalker(currentZone);updateMissions();
+  }
+  updateMissions();return;
+ }
+ if(c.lit){showToast('THE CANDLE IS ALREADY BURNING.');return;}
+ c.lit=true;candlesLit++;glitchPulse=Math.max(glitchPulse,.3);audio?.stinger(.3);
+ showToast('CANDLES LIT: '+candlesLit+' / 3');
+ if(candlesLit>=3)triggerAltarTrap();
+ updateMissions();
 }
+function triggerAltarTrap(){
+ if(storyFlags.has('altar-trap-triggered'))return;
+ storyFlags.add('altar-trap-triggered');showThirteenDemises(null);controls.unlock();dialogueOpen=true;
+ $('speaker').textContent='THE FIRST';
+ $('subtitle').textContent='You did exactly what the room asked. The flames have carried your name ahead of you. There is no place left to stand.';
+ speakVoice($('subtitle').textContent,'The First');$('subtitle-wrap').classList.add('visible');$('dialogue-options').innerHTML='';
+ setTimeout(()=>{dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');triggerDeath('THE FIRST HAS TAKEN YOUR PLACE');},4800);
+}
+
 // A wall with real openings. axis 'x' runs along x at z=pos; axis 'z' runs along z at x=pos.
 function addWindowedWall(group, axis, pos, a, b, height, thick, m, windows) {
   const put = (u0, u1, y0, y1) => {
@@ -2125,7 +2154,7 @@ function applyConsequences(npc, index) {
   if (key === 'sergio' && index === 1) { fear = Math.min(1, fear + .05); }
   if (key === 'il primo' && npc.isOpeningPrimo) { storyFlags.add('met-primo'); storyFlags.add('primo-first-contact'); }
   else if (key === 'il primo') { const d = primoDialogue(); d.actions?.[index]?.(); }
-  applyChoiceEffect(key, index);
+  applyChoiceEffect(key,index,npc);
   if (storyFlags.has('primo-alerted')) placeStalker(currentZone);
   updateMissions();
 }
@@ -2740,9 +2769,10 @@ function paintingTexture(kind) {
 function difficultyTier() { return Math.min(6, seenMissions.size); }
 function primoSpeedBonus() { return difficultyTier() * .13; }
 // Choices lead to small rewards or penalties; the table is keyed by speaker and choice index.
-function applyChoiceEffect(key, index) {
-  const row = CHOICE_EFFECTS[key]; if (!row || !row[index]) return;
-  const effect = row[index].split(':')[1];
+function applyChoiceEffect(key,index,npc=null){
+ const row=CHOICE_EFFECTS[key];if(!row||!row[index])return;
+ const [severity,effect]=row[index].split(':');
+ if(severity==='bad'){showThirteenDemises(npc);if(npc?.cultist&&npc.fate==='present')queueCultFate('a wrong answer',npc,'collapse');}
   if (effect === 'map') {
     if (storyFlags.has('map')) return; storyFlags.add('map');
     journal.push({ id: 'map', title: 'Folded map', description: 'The farmhouse plan. The road runs north to the house. The slaughterhouse lies east, behind the barn. The church is past the canal. The forest begins where the lamp goes out.', kind: 'map', zone: currentZone });
@@ -2766,6 +2796,39 @@ function applyChoiceEffect(key, index) {
   }
   else if (effect === 'jumpscare') jumpscare();
   else if (effect === 'trip') trip();
+}
+let demiseVision=null;
+function showThirteenDemises(sourceNpc=null){
+ if(!zone)return;
+ if(demiseVision?.group?.parent)demiseVision.group.parent.remove(demiseVision.group);
+ const group=new THREE.Group(),dir=new THREE.Vector3();camera.getWorldDirection(dir);dir.y=0;dir.normalize();
+ const center=playerAnchor.position.clone().addScaledVector(dir,4.8);group.position.set(center.x,0,center.z);group.rotation.y=Math.atan2(-dir.x,-dir.z);zone.group.add(group);
+ const materials=[];
+ for(let i=0;i<13;i++){
+  const figure=new THREE.Group();
+  const shadow=new THREE.MeshStandardMaterial({color:i%3===0?0x50302a:0x191a17,roughness:1,transparent:true,opacity:.86,depthWrite:false});
+  const ash=new THREE.MeshStandardMaterial({color:0x82786a,roughness:1,transparent:true,opacity:.54,depthWrite:false});
+  const body=new THREE.Mesh(new THREE.CapsuleGeometry(.15,.56,4,7),shadow);body.position.y=.78;body.scale.set(1.05,1.12,.56);figure.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.12,8,7),ash);head.position.y=1.48;head.scale.set(.82,1.12,.7);figure.add(head);
+  for(const side of [-1,1]){
+   const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.04,.38,4,6),shadow);arm.position.set(side*.22,.94,0);arm.rotation.z=side*([.8,-.55,.15,1.15][(i+side+4)%4]);figure.add(arm);
+   const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.05,.35,4,6),shadow);leg.position.set(side*.085,.28,.02);leg.rotation.z=side*([.45,0,-.6,.2][(i+side+4)%4]);figure.add(leg);
+  }
+  const noose=new THREE.Mesh(new THREE.TorusGeometry(.12,.017,5,14),ash);noose.position.y=1.68;figure.add(noose);
+  const a=(i/12-.5)*2.25,offset=Math.sin(a)*5.5,depth=Math.cos(a)*.65;
+  figure.position.set(offset,.02,depth);figure.rotation.z=[-.72,.24,1.18,0][i%4];figure.rotation.x=[.35,-.45,0,.85][i%4];figure.scale.setScalar(.88+(i%4)*.06);group.add(figure);
+  const stain=new THREE.Mesh(new THREE.CircleGeometry(.22+(i%3)*.04,14),new THREE.MeshBasicMaterial({color:0x2a090a,transparent:true,opacity:.62,depthWrite:false}));
+  stain.rotation.x=-Math.PI/2;stain.position.set(offset,.012,depth);group.add(stain);
+  [shadow,ash,stain.material].forEach(m=>{m.userData.baseOpacity=m.opacity;materials.push(m);});
+ }
+ demiseVision={group,materials,t:0,duration:4.8,sourceNpc};glitchPulse=Math.max(glitchPulse,1.35);fear=Math.min(1,fear+.16);audio?.killingAudio();audio?.killSting();
+}
+function updateThirteenDemises(dt){
+ if(!demiseVision)return;
+ const v=demiseVision;v.t+=dt;const fade=THREE.MathUtils.smoothstep(v.t,2.2,v.duration);
+ v.materials.forEach(m=>{m.opacity=m.userData.baseOpacity*(1-fade);});
+ v.group.scale.setScalar(.94+Math.sin(v.t*6)*.025);v.group.position.y=Math.sin(v.t*1.8)*.035;
+ if(v.t>=v.duration){v.group.parent?.remove(v.group);demiseVision=null;}
 }
 function jumpscare() {
   const el = document.createElement('div');
