@@ -1604,8 +1604,9 @@ function activateDoor(item){
   const from=pivot.rotation.y,to=item.openAngle??-1.08,start=performance.now(),duration=520;
   const swing=()=>{const k=Math.min(1,(performance.now()-start)/duration),ease=1-Math.pow(1-k,3);pivot.rotation.y=from+(to-from)*ease;if(k<1)requestAnimationFrame(swing);else setTimeout(()=>{doorTransitioning=false;item._opening=false;enterZone(item.destination,item.spawn);},110);};swing();
 }
-function beginListening() {
-  if (collected.size < clueCount) { showToast('IL PIATTO È VUOTO. NON HAI ANCORA PORTATO ABBASTANZA STANZA QUI SOTTO.'); return; }
+function beginListening(){
+  if(collected.size<clueCount){showToast('THE PLATTER IS EMPTY. COLLECT ALL EIGHT CLUES.');return;}
+  if(!storyFlags.has('altar-rejected')){showToast('THE ALTAR HAS NOT BEEN REFUSED. BREAK ALL THREE WICKS FIRST.');return;}
   if (listeningPending || gameEnded) return;
   // Lock the player inside the listening room. Every remaining cultist is brought
   // into view and receives a visible fate before the ending choices are revealed.
@@ -2116,29 +2117,38 @@ function updatePresence(dt, t) {
   if (dist < 1.2) triggerDeath('IL PRIMO TI HA TROVATO');
 }
 // Missions: the first unfinished one whose prerequisites are met is shown in the objective panel.
-const MISSIONS = [
-  { id: 'house', text: 'Raggiungi la casa seguendo il sentiero di ghiaia.', done: () => storyFlags.has('visited-home') },
-  { id: 'ottavio', text: 'Parla con Ottavio in cucina, oppure con Sergio. Chiedi dove la terra è stata smossa.', when: () => storyFlags.has('visited-home'), done: () => graveUnlocked() },
-  { id: 'shovel', text: 'Cerca una pala nella rovina, accanto al muro crollato.', when: () => graveUnlocked(), done: () => tools.has('shovel') },
-  { id: 'grave', text: 'Scava la tomba sotto il salice. Tieni premuto E finché la terra cede.', when: () => tools.has('shovel'), done: () => storyFlags.has('grave-revealed') },
-  { id: 'candles', text: 'Accendi le tre candele sull’altare della chiesa.', when: () => collected.size >= 2, done: () => storyFlags.has('altar-lit') },
-  { id: 'primo', text: 'Il Primo ha sentito il tuo nome. Non lasciare che ti raggiunga mentre lo guardi.', when: () => storyFlags.has('primo-alerted'), done: () => false }
+const MISSIONS=[
+ {id:'house',text:'Reach the farmhouse by following the gravel path.',done:()=>storyFlags.has('visited-home')},
+ {id:'home-talk',text:'Speak with Ines and Ottavio. The things they know are not written down.',when:()=>storyFlags.has('visited-home'),done:()=>storyFlags.has('talked-ines')&&storyFlags.has('talked-ottavio')},
+ {id:'shovel',text:'Find a shovel in the ruined house, beside the collapsed wall.',when:()=>storyFlags.has('talked-ines')&&storyFlags.has('talked-ottavio'),done:()=>tools.has('shovel')},
+ {id:'grave',text:'Dig beneath the willow. Hold E until the earth gives way.',when:()=>tools.has('shovel'),done:()=>storyFlags.has('grave-revealed')},
+ {id:'widow',text:'Question the Widow in the ruined house about the 1977 recording.',when:()=>storyFlags.has('grave-revealed'),done:()=>storyFlags.has('talked-widow')},
+ {id:'remo',text:'Speak with Father Remo. Ask why the cross has been turned around.',when:()=>collected.size>=2,done:()=>storyFlags.has('talked-remo')},
+ {id:'candles',text:'Light the three altar candles. Follow the light.',when:()=>collected.size>=2,done:()=>storyFlags.has('altar-rejected')},
+ {id:'first',text:'The First has heard your name. Survive his anger.',when:()=>storyFlags.has('primo-alerted'),done:()=>storyFlags.has('altar-rejected')}
 ];
-function currentMissionText() {
-  // Main evidence progression takes precedence over optional side missions.
-  if (collected.size === 7) {
-    return currentZone === 'abattoir'
-      ? '7 / 8 TRACCE — Il Registro della macelleria è sul lato nord-ovest, vicino alla parete di fondo.'
-      : '7 / 8 TRACCE — Vai a est lungo il passaggio di assi. La Casa delle Bestie contiene l’ultimo registro.';
-  }
-  if (collected.size >= clueCount) {
-    if (currentZone === 'cellar') return '8 / 8 TRACCE — Avvicinati al piatto nero e premi E per ascoltare Il Bianco.';
-    if (currentZone === 'home') return '8 / 8 TRACCE — La botola in cucina è libera. Scendi in cantina.';
-    return '8 / 8 TRACCE — Torna alla casa principale e scendi dalla botola in cucina.';
-  }
-  for (const m of MISSIONS) if (!m.done() && (!m.when || m.when())) return m.text;
-  return null;
+function currentMissionText(){
+ if(currentZone==='home'&&!storyFlags.has('talked-ines'))return 'Speak with Ines before examining the seating list.';
+ if(currentZone==='home'&&!storyFlags.has('talked-ottavio'))return 'Speak with Ottavio before examining the tuning fork.';
+ if(currentZone==='church'&&!storyFlags.has('talked-remo'))return 'Speak with Father Remo before examining the Mass Register.';
+ if(currentZone==='ruin'&&!storyFlags.has('talked-widow'))return 'Speak with the Widow before examining the burned photograph.';
+ if(collected.size===7)return currentZone==='abattoir'
+   ?'7 / 8 CLUES — The slaughterhouse ledger is on the north-west side, near the back wall.'
+   :'7 / 8 CLUES — Follow the boardwalk east. The House of Beasts contains the final ledger.';
+ if(collected.size>=clueCount&&!storyFlags.has('altar-rejected'))return '8 / 8 CLUES — Return to the church. The altar is not finished with you.';
+ if(collected.size>=2&&!storyFlags.has('altar-rejected')){
+   if(storyFlags.has('wick-truth'))return 'BREAK THE THREE WICKS — '+candlesBroken+' / 3. Do not let the altar burn.';
+   return 'THE FIRST’S INSTRUCTION: Light the three altar candles. Follow the light.';
+ }
+ if(collected.size>=clueCount){
+   if(currentZone==='cellar')return '8 / 8 CLUES — Approach the black platter and press E to listen to The White.';
+   if(currentZone==='home')return '8 / 8 CLUES — The kitchen hatch is uncovered. Descend to the cellar.';
+   return '8 / 8 CLUES — Return to the farmhouse and descend through the kitchen hatch.';
+ }
+ for(const m of MISSIONS)if(!m.done()&&(!m.when||m.when()))return m.text;
+ return null;
 }
+
 function updateMissions() {
   for (const m of MISSIONS) if (!seenMissions.has(m.id) && m.done()) { seenMissions.add(m.id); showToast('OBIETTIVO COMPLETATO'); }
   const el = $('objective-text'); const text = currentMissionText();
