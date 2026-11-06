@@ -472,7 +472,8 @@ function addCultist(zone, x, z, name, coat=0x34332f, variant=0, line='Non siamo 
   const npc=makeNPC(zone.group,x,z,name,coat,variant);
   npc.dialogue={line,choices,replies}; return registerCultist(npc);
 }
-function queueCultFate(source='una traccia', preferred=null, mode=null) {
+function isProgressCriticalCultist(npc){const name=(npc?.name||'').toLowerCase();return name==='ines'||name==='ottavio';}
+function queueCultFate(source='a trace', preferred=null, mode=null) {
   const npc=preferred || [...cultRoster].reverse().find(n=>n.fate==='present');
   if(!npc || npc.fate!=='present') return null;
   npc.fate='queued';cultFateQueue.push({npc,source,mode:mode||(cultFateQueue.length%3===1?'collapse':'vanish')});
@@ -522,6 +523,11 @@ function updateCultSequence(dt,t) {
       if(k>=1&&a.elapsed>2.4){
         const stain=new THREE.Mesh(new THREE.CircleGeometry(.42,24),new THREE.MeshBasicMaterial({color:0x21090a,transparent:true,opacity:.55}));stain.rotation.x=-Math.PI/2;stain.position.set(n.object.position.x,.012,n.object.position.z);zone.group.add(stain);
         n.object.visible=false;n.fate='dead';cultFateActive=null;cultFateCooldown=listeningPending ? 0.48 : 3.8;
+         const fallen=(n.name||'').toLowerCase();
+         if(fallen==='ines'||(fallen==='ottavio'&&!collected.has('fork'))){
+           triggerDeath(fallen==='ines'?'INES HAS BEEN KILLED':'OTTAVIO HAS BEEN KILLED',fallen==='ines'?'The Seating List can no longer be read. The house closes around the missing name. This is the end of the recording.':'The tuning fork can no longer be recovered. The sequence is broken, and the recording ends here.');
+           return;
+         }
       }
     }else{
       const k=THREE.MathUtils.clamp(a.elapsed/2.9,0,1);n.object.position.lerpVectors(a.start,a.target,k);n.walking=true;
@@ -537,7 +543,8 @@ function updateCultSequence(dt,t) {
   }
 }
 function scheduleCultSceneFates(count,source,mode='collapse') {
-  for(let i=0;i<count;i++) queueCultFate(source,null,(i%2===0)?mode:'vanish');
+  const candidates=cultRoster.filter(n=>n.fate==='present'&&!isProgressCriticalCultist(n));
+  for(let i=0;i<count&&i<candidates.length;i++) queueCultFate(source,candidates[i],(i%2===0)?mode:'vanish');
 }
 function addDoor(group,x,z,label,destination,spawn,locked=false,options={}){
   const root=new THREE.Group();root.position.set(x,0,z);root.rotation.y=options.rotationY??0;group.add(root);
@@ -932,6 +939,20 @@ function buildRoad() {
   for (let i = 0; i < 4; i++) addBox(z.group, 17 + i * 4.5, 2.1, -1.12, .55, 4.3, .2, M.black);
   // Distant industrial chimneys.
   for (let i = 0; i < 3; i++) { const chimney = new THREE.Mesh(new THREE.CylinderGeometry(.65, .8, 22 + i * 5, 8), M.rust); chimney.position.set(48 + i * 4, 12 + i * 2.5, 41); z.group.add(chimney); }
+  // A fenced cemetery sits between the derelict works and the distant chimneys.
+  const cemetery=new THREE.Group();cemetery.position.set(44,0,18);cemetery.name='INDUSTRIAL_CEMETERY';z.group.add(cemetery);storyRef.cemetery=cemetery;
+  const cemeteryGround=new THREE.Mesh(new THREE.PlaneGeometry(16,12),M.darkWall);cemeteryGround.rotation.x=-Math.PI/2;cemeteryGround.position.y=.018;cemetery.add(cemeteryGround);
+  for(const x of [-8,8]){for(let zz=-6;zz<=6;zz+=1.25){if(x===-8&&Math.abs(zz)<2.2)continue;addBox(cemetery,x,.72,zz,.08,1.35,.08,M.rust,{castShadow:false});}addBox(cemetery,x,.34,0,.09,.08,12,M.rust,{castShadow:false});addBox(cemetery,x,1.08,0,.09,.08,12,M.rust,{castShadow:false});}
+  for(const zz of [-6,6]){for(let xx=-8;xx<=8;xx+=1.25)addBox(cemetery,xx,.72,zz,.08,1.35,.08,M.rust,{castShadow:false});addBox(cemetery,0,.34,zz,16,.08,.09,M.rust,{castShadow:false});addBox(cemetery,0,1.08,zz,16,.08,.09,M.rust,{castShadow:false});}
+  for(const zz of [-2.35,2.35]){addBox(cemetery,-8,.95,zz,.22,1.9,.22,M.darkWall);addBox(cemetery,-8,1.95,zz,.32,.14,.32,M.rust);}
+  const cemeterySign=new THREE.Mesh(new THREE.PlaneGeometry(2.6,.58),new THREE.MeshBasicMaterial({map:makeLabelTexture('CEMETERY',512,160),transparent:true,side:THREE.DoubleSide}));cemeterySign.position.set(-8.18,1.72,0);cemeterySign.rotation.y=Math.PI/2;cemetery.add(cemeterySign);
+  const graves=[[-4,-3],[-.1,-3],[3.9,-3],[-4,1.6],[-.1,1.6],[3.9,1.6]];
+  graves.forEach(([gx,gz],i)=>{const mound=new THREE.Mesh(new THREE.SphereGeometry(.9,10,7),mat(0x292820,1,{map:TEX.concrete}));mound.scale.set(1.05,.09,.52);mound.position.set(gx,.065,gz);cemetery.add(mound);const stone=new THREE.Mesh(new THREE.BoxGeometry(.68,.92,.18),M.darkWall);stone.position.set(gx,.52,gz-.66);stone.rotation.z=(i%2?-.055:.04);cemetery.add(stone);addBox(cemetery,gx,.91,gz-.765,.075,.46,.035,M.rust);addBox(cemetery,gx,.84,gz-.765,.34,.065,.04,M.rust);});
+  const marksman=new THREE.Group();marksman.position.set(31.1,4.78,7.2);marksman.rotation.y=-Math.PI/2;z.group.add(marksman);storyRef.cemeteryShooter=marksman;
+  const shooterBody=new THREE.Mesh(new THREE.CapsuleGeometry(.18,.58,4,7),M.black);shooterBody.position.y=.66;marksman.add(shooterBody);
+  const shooterHead=new THREE.Mesh(new THREE.SphereGeometry(.14,8,7),M.black);shooterHead.position.set(0,1.22,.02);marksman.add(shooterHead);
+  const rifle=new THREE.Mesh(new THREE.CylinderGeometry(.027,.04,.95,6),M.black);rifle.rotation.z=-Math.PI/2;rifle.position.set(.36,.78,.17);marksman.add(rifle);
+  const muzzle=new THREE.Mesh(new THREE.SphereGeometry(.035,6,5),M.rust);muzzle.position.set(.84,.78,.17);marksman.add(muzzle);
   // Doors into interiors.
   addDoor(z.group,0,-8.27,'la casa','home',[0,0,6.2]);
   addDoor(z.group,37,-17.28,'la chiesa','church',[0,0,9.4],false,{style:'roman'});
@@ -1077,8 +1098,8 @@ function buildChurch() {
   for (let i = 0; i < 6; i++) { addBox(z.group, -2.1 + i * .85, 2.12, -11.3, .055, .58, .055, M.wood); addLight(z.group, 0xffa35b, .24, 3.2, -2.1 + i * .85, 2.55, -11.3); }
   addLight(z.group, 0x9d3026, 1.7, 12, 0, 4.1, -14.2);
   const remo=makeNPC(z.group,1.5,-8.2,'Father Remo',0xddd7c9,1);
-  remo.dialogue={line:'The door is not closed. The room is on the other side. The altar is an instrument, and the candles are its keys.',choices:['What is on the record?','Why has the cross been turned around?'],replies:['A sound that does not need to be heard. A place that does not need to be inhabited.','Because the candles are not a guide. They are a fuse. Break the three wicks before they burn, and The First will hear you.']};
-  const bellMarker=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.18),M.clue);bellMarker.position.set(-6.8,.12,-5.8);z.group.add(bellMarker);z.interactables.push({id:'bell_event',type:'event',object:bellMarker,point:bellMarker.position,radius:2.8,prompt:'[ E ] TIRA LA CORDA DELLA CAMPANA',run:()=>{audio?.bell();triggerKillScene();}});
+  remo.dialogue={line:'The door is not closed. The room is on the other side. The altar is an instrument, and the candles are its keys.',choices:['What is on the record?','Why has the cross been turned around?'],replies:['A sound that does not need to be heard. A place that does not need to be inhabited.','The cross faces the road because the dead were never meant to stay here. Light all three altar candles. The room must be seen clearly before the record can be heard.']};
+  const bellMarker=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.18),M.clue);bellMarker.position.set(-6.8,.12,-5.8);z.group.add(bellMarker);z.interactables.push({id:'bell_event',type:'event',object:bellMarker,point:bellMarker.position,radius:2.8,prompt:'[ E ] PULL THE BELL ROPE',run:()=>{audio?.bell();triggerKillScene();}});
   addClueMesh(z.group,new THREE.Vector3(-5.8,1.7,-13.6),'Mass Register','The page lists a sequence of stations. The numbering jumps from the eleventh to the fourteenth. On the reverse: “no funeral.”','mass','paper',{requiresFlag:'talked-remo',blockedHint:'Speak with Father Remo before examining the Mass Register.'});
   addDoor(z.group,0,11.9,'il sagrato','road',[0,0,-29],false,{style:'roman'});
   z.mist = addFog(z.group, 38, 36, 0xb7bcb8, 67);
@@ -1509,7 +1530,7 @@ function collectClue(item) {
   dread = Math.min(1, dread + .13); glitchPulse = Math.max(glitchPulse, .85); audio.stinger(.85);
   showToast(`TRACCIA REGISTRATA // ${item.title.toUpperCase()}`); updateProgress();
   if (collected.size === clueCount) showToast('LA CASA HA FINITO DI CONTARE. LA BOTOLA È APERTA.');
-  const next=cultRoster.find(n=>n.fate==='present');if(next)queueCultFate(`traccia ${collected.size}`,next,collected.size%3===0?'collapse':'vanish');
+  const next=cultRoster.find(n=>n.fate==='present'&&!isProgressCriticalCultist(n));if(next)queueCultFate(`trace ${collected.size}`,next,collected.size%3===0?'collapse':'vanish');
 }
 function speakVoice(text, npcName = '') {
   // No speech synthesis: the line is whispered. Its length sets the duration, the speaker sets the side.
@@ -1526,7 +1547,6 @@ function speakVoice(text, npcName = '') {
 function openDialogue(npc) {
   if (dialogueOpen) return;
   if (npc.talkedOnce && !/primo/i.test(npc.name || '')) { showToast('THEY HAVE NOTHING MORE TO SAY.'); return; }
-  npc.talkedOnce = true;
   dialogueOpen = true; controls.unlock(); $('subtitle-wrap').classList.add('visible');
   $('speaker').textContent = npc.name.toUpperCase(); $('subtitle').textContent = npc.dialogue?.line || 'No answer. Only the sound of clothes.'; speakVoice(npc.dialogue?.line || 'No answer.',npc.name);
   const options = $('dialogue-options'); options.innerHTML = '';
@@ -1537,13 +1557,15 @@ function openDialogue(npc) {
   activeTarget = null; $('prompt').classList.remove('visible');
 }
 function chooseDialogue(npc, index) {
+  if(!npc||npc.talkedOnce)return;
+  npc.talkedOnce=true;
   let reply = npc.dialogue?.replies?.[index] || 'The answer comes from a room that does not exist.';
   const lower=(npc.name||'').toLowerCase();
   if(lower==='ines'){storyFlags.add(index===0?'ines-trust':'ines-betrayed');storyFlags.add('talked-ines');}
   if(lower==='sergio'){storyFlags.add(index===0?'sergio-truth':'sergio-silence');}
   if(lower==='dario'){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
   if(lower==='il primo'&&!npc.isOpeningPrimo){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
-  if(lower==='father remo'||lower==='father remo'){storyFlags.add('talked-remo');if(index===1){storyFlags.add('wick-truth');refreshCandlePrompts();showToast('THE ALTAR IS A FUSE. BREAK THE THREE WICKS.');}}
+  if(lower==='father remo'){storyFlags.add('talked-remo');if(index===1)showToast('FATHER REMO HAS EXPLAINED THE ALTAR. LIGHT ALL THREE CANDLES.');}
   if(lower==='the widow'||lower==='the widow')storyFlags.add('talked-widow');
   if(lower==='ottavio'){storyFlags.add('talked-ottavio');if(index===1)storyFlags.add('ottavio-audio');}
   if(lower==='anna')storyFlags.add(index===0?'anna-mercy':'anna-table');
@@ -1602,7 +1624,7 @@ function activateDoor(item){
 }
 function beginListening(){
   if(collected.size<clueCount){showToast('THE PLATTER IS EMPTY. COLLECT ALL EIGHT CLUES.');return;}
-  if(!storyFlags.has('altar-rejected')){showToast('THE ALTAR HAS NOT BEEN REFUSED. BREAK ALL THREE WICKS FIRST.');return;}
+  if(!storyFlags.has('altar-lit')){showToast('THE ALTAR IS STILL DARK. LIGHT ALL THREE CANDLES FIRST.');return;}
   if (listeningPending || gameEnded) return;
   // Lock the player inside the listening room. Every remaining cultist is brought
   // into view and receives a visible fate before the ending choices are revealed.
@@ -1610,7 +1632,7 @@ function beginListening(){
   camera.position.set(0,1.63,0);camera.rotation.z=0;cameraDirector.active=false;cameraDirector.cooldown=999;playerRig.visible=false;occludeMat.opacity=0;occludeRight.material.opacity=0;
   $('hud').classList.add('hidden-hud');$('prompt').classList.remove('visible');
   if(audio?.master&&audio.ctx)audio.master.gain.setTargetAtTime(.26,audio.ctx.currentTime,1.2);
-  cultRoster.filter(n=>n.fate==='present').forEach((npc,i)=>queueCultFate('il giro del disco',npc,i%4===0?'collapse':'vanish'));
+  cultRoster.filter(n=>n.fate==='present').forEach((npc,i)=>queueCultFate('the turn of the record',npc,isProgressCriticalCultist(npc)?'vanish':(i%4===0?'collapse':'vanish')));
   showToast('TREDICI NOMI. LA STANZA LI VUOLE VEDERE USCIRE.');
   speakVoice('Non abbassare gli occhi. La stanza deve svuotarsi prima che tu possa scegliere.','REGISTRAZIONE 14-B');
   if(!cultFateActive && cultFateQueue.length===0) finishListening();
@@ -1912,38 +1934,19 @@ function updateCandles(t) {
     c.flame.scale.set(1 + (v - .8) * .3, 1.7 + (v - .8) * .6, 1);
   }
 }
-let candlesBroken=0;
-function refreshCandlePrompts(){candles.forEach(c=>{for(const z of Object.values(zones)){const entry=z.interactables.find(item=>item.type==='candle'&&item.candle===c);if(entry)entry.prompt=storyFlags.has('wick-truth')?'[ E ] BREAK THE WICK':'[ E ] LIGHT THE CANDLE';}});}
+function refreshCandlePrompts(){candles.forEach(c=>{for(const z of Object.values(zones)){const entry=z.interactables.find(item=>item.type==='candle'&&item.candle===c);if(entry)entry.prompt='[ E ] LIGHT THE CANDLE';}});}
 function lightCandle(c){
- if(c.destroyed)return;
- if(storyFlags.has('wick-truth')){
-  c.destroyed=true;c.lit=false;c.flame.visible=false;c.light.intensity=0;c.wax.material=M.darkWall;c.wax.scale.set(.72,.38,.72);c.root.rotation.z=(Math.random()-.5)*.16;
-  const soot=new THREE.Mesh(new THREE.CircleGeometry(.17,14),new THREE.MeshBasicMaterial({color:0x171310,transparent:true,opacity:.78}));
-  soot.rotation.x=-Math.PI/2;soot.position.y=.006;c.root.add(soot);
-  candlesBroken++;glitchPulse=Math.max(glitchPulse,.7);audio?.mechanicalEvent('latch');
-  showToast('WICK DESTROYED // '+candlesBroken+' / 3');
-  const list=c.root.parent?.userData?.interactables,entry=list?.find(item=>item.type==='candle'&&item.candle===c),ix=entry?list.indexOf(entry):-1;if(ix>=0)list.splice(ix,1);
-  if(candlesBroken===3){
-   storyFlags.add('altar-rejected');storyFlags.add('primo-alerted');storyFlags.add('primo-betrayal');
-   fear=Math.min(1,fear+.34);audio?.killSting();audio?.mechanicalEvent('bell');
-   showToast('THE LAST WICK BREAKS. THE FIRST HEARS YOU.');
-   scheduleCultSceneFates(3,'the broken altar','collapse');placeStalker(currentZone);updateMissions();
-  }
-  updateMissions();return;
+ if(!c||c.lit)return;
+ c.lit=true;candlesLit=Math.min(3,candlesLit+1);glitchPulse=Math.max(glitchPulse,.3);audio?.stinger(.3);
+ showToast('ALTAR CANDLES LIT: '+candlesLit+' / 3');
+ if(candlesLit>=3&&!storyFlags.has('altar-lit')){
+   storyFlags.add('altar-lit');storyFlags.add('primo-alerted');storyFlags.add('cemetery-bait');
+   fear=Math.min(1,fear+.20);audio?.killSting();audio?.mechanicalEvent('bell');
+   if(storyRef.cemeteryShooter)storyRef.cemeteryShooter.visible=true;
+   storyLine('The First: Go to the cemetery beside the industries. The missing name is waiting there.');
+   placeStalker(currentZone);showToast('THREE FLAMES. A NEW INSTRUCTION ARRIVES FROM THE FACTORIES.');
  }
- if(c.lit){showToast('THE CANDLE IS ALREADY BURNING.');return;}
- c.lit=true;candlesLit++;glitchPulse=Math.max(glitchPulse,.3);audio?.stinger(.3);
- showToast('CANDLES LIT: '+candlesLit+' / 3');
- if(candlesLit>=3)triggerAltarTrap();
  updateMissions();
-}
-function triggerAltarTrap(){
- if(storyFlags.has('altar-trap-triggered'))return;
- storyFlags.add('altar-trap-triggered');showThirteenDemises(null);controls.unlock();dialogueOpen=true;
- $('speaker').textContent='THE FIRST';
- $('subtitle').textContent='You did exactly what the room asked. The flames have carried your name ahead of you. There is no place left to stand.';
- speakVoice($('subtitle').textContent,'The First');$('subtitle-wrap').classList.add('visible');$('dialogue-options').innerHTML='';
- setTimeout(()=>{dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');triggerDeath('THE FIRST HAS TAKEN YOUR PLACE');},4800);
 }
 
 // A wall with real openings. axis 'x' runs along x at z=pos; axis 'z' runs along z at x=pos.
@@ -2030,8 +2033,7 @@ function addDigSite(group, x, z) {
   const bar = new THREE.Mesh(new THREE.BoxGeometry(.5, .08, .08), mat(0x4a3420, 1)); bar.position.set(.5, .62, 1.9); root.add(bar);
   return { id: 'dig_grave', type: 'dig', object: root, point: new THREE.Vector3(x + .5, .3, z + 1.9), radius: 2.6, prompt: '[ E ] TIENI PREMUTO — SCAVA' };
 }
-function graveUnlocked() { return storyFlags.has('ottavio-audio') || storyFlags.has('sergio-truth'); }
-function digAvailable() { return tools.has('shovel') && graveUnlocked() && !digDone; }
+function digAvailable() { return tools.has('shovel') && !digDone; }
 function syncDigSite() {
   if (!digEntry) return;
   const list = zones.road.interactables; const has = list.includes(digEntry);
@@ -2120,22 +2122,20 @@ const MISSIONS=[
  {id:'grave',text:'Dig beneath the willow. Hold E until the earth gives way.',when:()=>tools.has('shovel'),done:()=>storyFlags.has('grave-revealed')},
  {id:'widow',text:'Question the Widow in the ruined house about the 1977 recording.',when:()=>storyFlags.has('grave-revealed'),done:()=>storyFlags.has('talked-widow')},
  {id:'remo',text:'Speak with Father Remo. Ask why the cross has been turned around.',when:()=>collected.size>=2,done:()=>storyFlags.has('talked-remo')},
- {id:'candles',text:'Light the three altar candles. Follow the light.',when:()=>collected.size>=2,done:()=>storyFlags.has('altar-rejected')},
- {id:'first',text:'The First has heard your name. Survive his anger.',when:()=>storyFlags.has('primo-alerted'),done:()=>storyFlags.has('altar-rejected')}
+ {id:'candles',text:'Light all three altar candles. The flames are part of the way forward.',when:()=>collected.size>=2,done:()=>storyFlags.has('altar-lit')},
+ {id:'cemetery',text:'The First says the missing name is buried in the cemetery beside the industries.',when:()=>storyFlags.has('cemetery-bait'),done:()=>storyFlags.has('cemetery-shot')}
 ];
 function currentMissionText(){
- if(currentZone==='home'&&!storyFlags.has('talked-ines'))return 'Speak with Ines before examining the seating list.';
- if(currentZone==='home'&&!storyFlags.has('talked-ottavio'))return 'Speak with Ottavio before examining the tuning fork.';
+ if(currentZone==='home'&&!storyFlags.has('talked-ines'))return 'Speak with Ines before examining the Seating List.';
+ if(currentZone==='home'&&!storyFlags.has('talked-ottavio'))return 'Speak with Ottavio before examining the Tuning Fork.';
  if(currentZone==='church'&&!storyFlags.has('talked-remo'))return 'Speak with Father Remo before examining the Mass Register.';
- if(currentZone==='ruin'&&!storyFlags.has('talked-widow'))return 'Speak with the Widow before examining the burned photograph.';
+ if(currentZone==='ruin'&&!storyFlags.has('talked-widow'))return 'Speak with the Widow before examining the Burned Photograph.';
  if(collected.size===7)return currentZone==='abattoir'
    ?'7 / 8 CLUES — The slaughterhouse ledger is on the north-west side, near the back wall.'
    :'7 / 8 CLUES — Follow the boardwalk east. The House of Beasts contains the final ledger.';
- if(collected.size>=clueCount&&!storyFlags.has('altar-rejected'))return '8 / 8 CLUES — Return to the church. The altar is not finished with you.';
- if(collected.size>=2&&!storyFlags.has('altar-rejected')){
-   if(storyFlags.has('wick-truth'))return 'BREAK THE THREE WICKS — '+candlesBroken+' / 3. Do not let the altar burn.';
-   return 'THE FIRST’S INSTRUCTION: Light the three altar candles. Follow the light.';
- }
+ if(storyFlags.has('cemetery-bait')&&!storyFlags.has('cemetery-shot')&&collected.size<clueCount)return 'THE FIRST’S INSTRUCTION: Go to the cemetery beside the industries. Find the missing name.';
+ if(collected.size>=clueCount&&!storyFlags.has('altar-lit'))return '8 / 8 CLUES — Return to the church and light all three altar candles.';
+ if(collected.size>=2&&!storyFlags.has('altar-lit'))return 'LIGHT ALL THREE ALTAR CANDLES — The flames are part of the way forward.';
  if(collected.size>=clueCount){
    if(currentZone==='cellar')return '8 / 8 CLUES — Approach the black platter and press E to listen to The White.';
    if(currentZone==='home')return '8 / 8 CLUES — The kitchen hatch is uncovered. Descend to the cellar.';
@@ -2150,11 +2150,25 @@ function updateMissions() {
   const el = $('objective-text'); const text = currentMissionText();
   if (text && el.textContent !== text) el.textContent = text;
 }
+function triggerCemeteryAmbush(){
+ if(gameEnded||storyFlags.has('cemetery-shot'))return;
+ storyFlags.add('cemetery-shot');keys.clear();controls.unlock();activeTarget=null;dialogueOpen=true;
+ $('speaker').textContent='THE FACTORY ROOF';$('subtitle').textContent='A rifle cracks from the industrial roof. You feel the impact before the echo reaches the cemetery.';$('subtitle-wrap').classList.add('visible');
+ audio?.mechanicalNoise(.16,1850,8,.34,-.18);audio?.mechanicalTone(145,42,.24,'square',.16,-.18);audio?.killSting();
+ glitchPulse=Math.max(glitchPulse,2);fear=1;camera.rotation.z+=.11;
+ const world=$('world');if(world)world.style.filter='contrast(1.8) saturate(2.2) sepia(.4)';
+ const flash=$('event-flash');flash.classList.add('active');setTimeout(()=>flash.classList.remove('active'),130);
+ setTimeout(()=>{dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');triggerDeath('SHOT IN THE CEMETERY','You followed the instruction to the cemetery beside the industries. The shot came from the factory roof. The missing name was never there.');},820);
+}
+function updateCemeteryTrap(){
+ if(currentZone!=='road'||!storyFlags.has('cemetery-bait')||storyFlags.has('cemetery-shot')||gameEnded||!zone)return;
+ const p=currentPosition();if(p.x>=38&&p.x<=50&&p.z>=12&&p.z<=24)triggerCemeteryAmbush();
+}
 // Dialogue choices with consequences: some open or close missions, others move the enemy or the cult.
 function applyConsequences(npc, index) {
   const key = (npc.name || '').toLowerCase();
   if (key === 'ottavio' && index === 0) { storyFlags.add('ottavio-cold'); showToast('OTTAVIO TURNS HIS BACK ON YOU. TRY SERGIO.'); }
-  if (key === 'ines' && index === 1) { queueCultFate('il tradimento di Ines', npc, 'vanish'); fear = Math.min(1, fear + .12); showToast('INES CHOSE TO UNDERSTAND. THE HOUSE TIGHTENS.'); }
+  if (key === 'ines' && index === 1) { queueCultFate('Ines was betrayed', npc, 'collapse'); fear = Math.min(1, fear + .12); showToast('INES HAS UNDERSTOOD. THE HOUSE TIGHTENS.'); }
   if (key === 'dario' && index === 1) { storyFlags.add('primo-alerted'); showToast('IL PRIMO HAS HEARD YOUR NAME.'); }
   if (key === 'anna' && index === 1) { queueCultFate('il piatto di Anna', npc, 'collapse'); }
   if (key === 'sergio' && index === 1) { fear = Math.min(1, fear + .05); }
@@ -3080,9 +3094,9 @@ function animateZone(t, dt) {
   }
 }
 function clearSavedEvidence() { try { localStorage.removeItem(EVIDENCE_SAVE_KEY); } catch (_) {} }
-function triggerDeath(reason='LA STANZA TI HA TROVATO') {
+function triggerDeath(reason='THE ROOM HAS FOUND YOU',copy='The recording continues for eleven seconds after the body has stopped.') {
   clearSavedEvidence();
-  if(gameEnded)return;gameEnded=true;controls.unlock();keys.clear();$('hud').classList.add('hidden-hud');$('death-title').textContent=reason;$('death-copy').textContent='La registrazione continua per undici secondi dopo la fine del corpo.';$('death-screen').classList.add('active');audio?.killSting();
+  if(gameEnded)return;gameEnded=true;controls.unlock();keys.clear();$('hud').classList.add('hidden-hud');$('death-title').textContent=reason;$('death-copy').textContent=copy;$('death-screen').classList.add('active');audio?.killSting();
 }
 function updateHorror(dt,t){
   if(!gameStarted||gameEnded||!zone||dialogueOpen||journalOpen)return;
@@ -3112,7 +3126,7 @@ function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(clock.getDelta(), .04); const t = performance.now();
   if (gameStarted && !gameEnded) {
-    updatePlayer(dt); updateTargets(); animateZone(t, dt); updateCultSequence(dt,t);
+    updatePlayer(dt); updateCemeteryTrap(); updateTargets(); animateZone(t, dt); updateCultSequence(dt,t);
     if(listeningPending && !cultFateActive && cultFateQueue.length===0) finishListening();
     updateMissions(); updateDig(dt); updatePresence(dt, t);
     if(!gameEnded){updateHorror(dt,t);updateDayNight(dt,t);updateWeather(dt,t);updateCameraDirector(dt,t);updateHud(dt);}
