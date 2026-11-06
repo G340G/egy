@@ -279,30 +279,21 @@ function makeFaceCanvas(image, spec) {
   ctx.putImageData(d,0,0); ctx.globalCompositeOperation='destination-in'; ctx.beginPath(); ctx.ellipse(128,160,119,153,0,0,Math.PI*2); ctx.fill();
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t;
 }
-function makeBodyCanvas(image, spec) {
-  const c=document.createElement('canvas'); c.width=360; c.height=720; const ctx=c.getContext('2d');
-  ctx.filter='grayscale(100%) contrast(1.32) brightness(.82) sepia(13%)';
-  const scale=Math.min(340/image.width,700/image.height), w=image.width*scale, h=image.height*scale;
-  ctx.drawImage(image,(360-w)/2,(720-h)/2,w,h); ctx.filter='none';
-  const d=ctx.getImageData(0,0,360,720);
-  for(let i=0;i<d.data.length;i+=4){ const r=d.data[i],g=d.data[i+1],b=d.data[i+2], lum=(r+g+b)/3; const edge=spec.mode==='dark' ? lum<20 : lum>249; if(edge)d.data[i+3]=0; }
-  ctx.putImageData(d,0,0);
-  // Torn archival edges: tiny irregular holes make the photograph read as a found cut-out.
-  ctx.globalCompositeOperation='destination-out'; for(let i=0;i<170;i++){const xx=Math.random()*360, yy=Math.random()*720; if(xx<15||xx>345||yy<8||yy>712){ctx.fillStyle=`rgba(0,0,0,${Math.random()*.8})`;ctx.beginPath();ctx.arc(xx,yy,Math.random()*5,0,Math.PI*2);ctx.fill();}}
-  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t;
-}
+function refreshPhotoNPC(npc){const key=npc.photoKey,image=PHOTO_IMAGES[key];if(!image)return;const spec=PHOTO_ARCHIVE[key];try{const face=makeFaceCanvas(image,spec);npc.photoFace.material.map?.dispose?.();npc.photoFace.material.map=face;npc.photoFace.material.needsUpdate=true;npc.photoFace.visible=!npc.isFirst;}catch(err){npc.photoFace.visible=false;console.warn('Could not crop archival face:',key,err);}}
 function refreshPhotoNPC(npc) {
   const key=npc.photoKey, image=PHOTO_IMAGES[key]; if(!image)return;
   const spec=PHOTO_ARCHIVE[key];
   try { const face=makeFaceCanvas(image,spec); npc.photoFace.material.map?.dispose?.(); npc.photoFace.material.map=face; npc.photoFace.material.needsUpdate=true; npc.photoFace.visible=true; } catch(err) { npc.photoFace.visible=false; console.warn('Could not crop archival face:',key,err); }
-  if(npc.photoBody?.material&&spec.mode!=='dark') { try { const body=makeBodyCanvas(image,spec); npc.photoBody.material.map?.dispose?.(); npc.photoBody.material.map=body; npc.photoBody.material.needsUpdate=true; npc.photoBody.visible=true; } catch(err) { console.warn('Could not cut out archival body:',key,err); } }
+
 }
-function profileForNPC(name, variant) {
-  const n=name.toLowerCase();
-  if(n.includes('ines'))return 'woman'; if(n.includes('donna al canale'))return 'elder';
-  if(n.includes('vedova')||n.includes('anna'))return 'elder'; if(n.includes('ottavio')||n.includes('cappotto'))return 'oldman';
-  if(n.includes('remo')||n.includes('cantore')||n.includes('primo'))return 'man'; return variant===0?'woman':'oldman';
+function profileForNPC(name,variant){
+ const n=(name||'').toLowerCase();
+ if(['ines','anna','vanda','ada','mirella','teresa','woman by the canal','the widow','la donna','la vedova'].some(v=>n.includes(v)))return 'woman';
+ if(n.includes('father remo')||n.includes('don remo')||n.includes('the first')||n.includes('il primo')||n.includes('dario')||n.includes('sergio')||n.includes('nino')||n.includes('elio'))return 'man';
+ if(n.includes('ottavio')||n.includes('the coat')||n.includes('il cappotto'))return 'oldman';
+ return variant===0?'woman':'oldman';
 }
+
 Object.entries(PHOTO_ARCHIVE).forEach(([key,spec])=>{
   const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async';
   img.onload=()=>{PHOTO_IMAGES[key]=img; photoNPCs.filter(n=>n.photoKey===key).forEach(refreshPhotoNPC); evidenceRefreshers.forEach(fn=>fn());};
@@ -397,38 +388,81 @@ function addClueMesh(group, pos, title, description, id, kind = 'paper') {
   const entry = { id, type: 'clue', object: root, point: root.position, radius: 3.0, prompt: `[ E ] RACCOGLI — ${title.toUpperCase()}`, title, description, kind };
   group.userData.interactables.push(entry); return root;
 }
-function makeNPC(group, x, z, name, coatColor = 0x272725, variant = 0) {
-  const root = new THREE.Group(); root.position.set(x, 0, z); group.add(root);
-  const coatMaterial=mat(coatColor,1,{map:TEX.wood,bumpScale:.04});
-  const coat = new THREE.Mesh(new THREE.CapsuleGeometry(.33, .76, 6, 12), coatMaterial); coat.position.y = .94; coat.castShadow = true; coat.scale.set(1.08 + Math.random() * .12, 1, .92 + Math.random() * .12); root.add(coat);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(.245, 24, 18), mat(variant === 1 ? 0x77766d : 0x4d4d48, 1)); head.position.y = 1.7; head.scale.set(.74 + Math.random() * .1, 1.14 + Math.random() * .16, .84); head.rotation.z = (Math.random() - .5) * .22; root.add(head);
-  const eyeWhite=mat(0xb8b0a0,.82), pupilMat=mat(0x151412,.42), lidMat=mat(0x554b40,.98);
-  const eyes=[], lids=[];
-  for(const side of [-1,1]){
-    const eye=new THREE.Mesh(new THREE.SphereGeometry(.026,10,8),eyeWhite);eye.position.set(side*.078,1.755,.258);root.add(eye);
-    const pupil=new THREE.Mesh(new THREE.SphereGeometry(.011,8,6),pupilMat);pupil.position.set(side*.078,1.755,.281);root.add(pupil);
-    const lid=new THREE.Mesh(new THREE.SphereGeometry(.039,10,8),lidMat);lid.scale.set(1,.08,.36);lid.position.set(side*.078,1.783,.265);root.add(lid);eyes.push(eye,pupil);lids.push(lid);
-  }
-  const faceMaterial=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.97,side:THREE.DoubleSide,depthWrite:false});
-  const photoFace=new THREE.Mesh(new THREE.PlaneGeometry(.29,.37),faceMaterial);photoFace.position.set(0,1.71,.226);photoFace.visible=false;root.add(photoFace);
-  const mask = new THREE.Mesh(new THREE.BoxGeometry(.26, .085, .035), mat(0x0b0b0b, .8)); mask.position.set(0, 1.71, -.205); mask.visible=false; root.add(mask);
-  const armMat=mat(coatColor,1,{map:TEX.wood,bumpScale:.04});
-  const leftArm=new THREE.Mesh(new THREE.CapsuleGeometry(.095,.42,5,9),armMat);leftArm.position.set(-.39,1.0,.01);leftArm.rotation.z=-.16;root.add(leftArm);
-  const rightArm=new THREE.Mesh(new THREE.CapsuleGeometry(.095,.42,5,9),armMat);rightArm.position.set(.39,1.0,.01);rightArm.rotation.z=.16;root.add(rightArm);
-  const leftForearm=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.31,4,8),M.skin);leftForearm.position.set(-.43,.67,.06);leftForearm.rotation.z=-.24;root.add(leftForearm);
-  const rightForearm=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.31,4,8),M.skin);rightForearm.position.set(.43,.67,.06);rightForearm.rotation.z=.24;root.add(rightForearm);
-  const handMat=mat(0x6c6257,.95);for(const side of [-1,1]){const hand=new THREE.Mesh(new THREE.SphereGeometry(.085,10,8),handMat);hand.scale.set(.75,1.2,.6);hand.position.set(side*.47,.42,.08);root.add(hand);}
-  const legMat=mat(0x292824,1,{map:TEX.wood}); const legs=[]; const shoes=[];
-  for(const side of [-1,1]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.62,5,9),legMat);leg.position.set(side*.17,.28,0);root.add(leg);const shoe=new THREE.Mesh(new THREE.BoxGeometry(.18,.12,.32),M.black);shoe.position.set(side*.17,.055,.07);root.add(shoe);legs.push(leg);shoes.push(shoe);}
-  const collar = new THREE.Mesh(new THREE.BoxGeometry(.43, .12, .28), M.darkWood); collar.position.y = 1.36; root.add(collar);
-  // A photographed, torn-edged cut-out supplies actual archival face, torso and limb detail.
-  const photoKey=profileForNPC(name,variant);
-  const photoMat=new THREE.SpriteMaterial({color:0xffffff,transparent:true,opacity:.78,depthWrite:false,side:THREE.DoubleSide});
-  const photoBody=new THREE.Sprite(photoMat);photoBody.position.set(0,1.03,.115);photoBody.scale.set(.92,1.88,1);photoBody.visible=false;root.add(photoBody);
-  const npc = { head, id: `npc_${name.toLowerCase().replace(/\W/g, '_')}`, type: 'npc', object: root, point: root.position, radius: 3.4, prompt: `[ E ] PARLA — ${name.toUpperCase()}`, name, phase: Math.random() * 7, coat, leftArm, rightArm, photoFace, photoBody, photoKey, leftForearm, rightForearm, legs, shoes, eyes, lids, blinkTimer:1.8+Math.random()*4, blinkAmount:0, walking:false, cultist:false, fate:'present' };
-  photoNPCs.push(npc); refreshPhotoNPC(npc);
-  group.userData.interactables.push(npc); return npc;
+function makeNPC(group,x,z,name,coatColor=0x272725,variant=0){
+ const root=new THREE.Group();root.position.set(x,0,z);group.add(root);
+ const lower=(name||'').toLowerCase(),profile=profileForNPC(name,variant);
+ const female=profile==='woman',elder=profile==='oldman'||profile==='elder',first=lower==='the first'||lower==='il primo';
+ const skin=mat([0x88735f,0x9b826d,0x716052,0x8d7a68,0x6b5c51][(name||'').length%5],.96,{map:TEX.plaster,bumpScale:.022});
+ const cloth=mat(coatColor,1,{map:TEX.wood,bumpScale:.045}),trim=mat(first?0x1d1b18:(variant===0?0x39352e:0x292b28),1,{map:TEX.wood});
+ const hairColor=elder?0x77736b:(female?0x211c19:0x26221e),hair=mat(hairColor,1,{map:TEX.wood,bumpScale:.02});
+ const boot=mat(0x211f1b,.95,{map:TEX.wood}),faceShadow=mat(0x211b18,.96);
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.285,.66,7,14),cloth);torso.position.set(first?.045:0,1.02,0);torso.scale.set(first?1.12:1,1,.76);torso.rotation.z=first?-.075:0;torso.castShadow=true;root.add(torso);
+ const chest=new THREE.Mesh(new THREE.SphereGeometry(.285,14,10),cloth);chest.position.set(first?.05:0,1.40,0);chest.scale.set(1.12,.56,.8);root.add(chest);
+ const waist=new THREE.Mesh(new THREE.CylinderGeometry(.19,.235,.38,12),cloth);waist.position.y=.70;root.add(waist);
+ const neck=new THREE.Mesh(new THREE.CylinderGeometry(.073,.087,.23,10),skin);neck.position.y=1.64;root.add(neck);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.205,20,16),skin);head.position.set(first?-.055:0,1.91,.012);head.scale.set(first?.76:.84,1.04,.88);head.rotation.z=first?-.16:(Math.random()-.5)*.045;root.add(head);
+ const jaw=new THREE.Mesh(new THREE.SphereGeometry(.14,14,10),skin);jaw.position.set(first?-.055:0,1.79,.085);jaw.scale.set(.82,.57,.88);root.add(jaw);
+ const nose=new THREE.Mesh(new THREE.ConeGeometry(.042,.10,7),skin);nose.rotation.x=Math.PI/2;nose.position.set(first?-.055:0,1.88,.194);root.add(nose);
+ const mouth=new THREE.Mesh(new THREE.BoxGeometry(.075,.012,.012),faceShadow);mouth.position.set(first?-.055:0,1.81,.205);root.add(mouth);
+ const eyeMat=mat(0xbab0a0,.74),pupilMat=mat(0x171513,.45),eyes=[],lids=[];
+ for(const side of [-1,1]){
+  const ex=(first?-.055:0)+side*.073;
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(.022,10,8),eyeMat);eye.position.set(ex,1.935,.174);root.add(eye);
+  const pupil=new THREE.Mesh(new THREE.SphereGeometry(.009,8,6),pupilMat);pupil.position.set(ex,1.934,.193);root.add(pupil);
+  const brow=new THREE.Mesh(new THREE.CapsuleGeometry(.012,.065,3,5),hair);brow.position.set(ex,1.972,.174);brow.rotation.z=side*.1;root.add(brow);
+  const lid=new THREE.Mesh(new THREE.SphereGeometry(.033,9,7),hair);lid.scale.set(1,.08,.28);lid.position.set(ex,1.955,.178);root.add(lid);eyes.push(eye,pupil);lids.push(lid);
+  const ear=new THREE.Mesh(new THREE.SphereGeometry(.052,8,7),skin);ear.scale.set(.48,1,.54);ear.position.set((first?-.055:0)+side*.19,1.90,.005);root.add(ear);
+ }
+ const cap=new THREE.Mesh(new THREE.SphereGeometry(.205,16,10),hair);cap.position.set(first?-.065:0,2.035,-.018);cap.scale.set(.92,.51,.98);root.add(cap);
+ if(female){
+  const back=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.40,5,8),hair);back.position.set(0,1.69,-.105);back.scale.set(1.08,1.15,.58);root.add(back);
+  for(const side of [-1,1]){const lock=new THREE.Mesh(new THREE.CapsuleGeometry(.043,.34,4,7),hair);lock.position.set(side*.15,1.72,.005);lock.rotation.z=side*.10;root.add(lock);const fringe=new THREE.Mesh(new THREE.SphereGeometry(.09,10,7),hair);fringe.position.set(side*.075,2.00,.12);fringe.scale.set(1,.46,.64);root.add(fringe);}
+ }else{
+  for(const side of [-1,1]){const sideburn=new THREE.Mesh(new THREE.CapsuleGeometry(.032,.13,3,6),hair);sideburn.position.set(side*.17,1.93,.04);root.add(sideburn);}
+  if(elder){const grey=new THREE.Mesh(new THREE.SphereGeometry(.105,9,7),mat(0xaaa397,.98));grey.scale.set(1,.34,.7);grey.position.set(.11,2.04,-.015);root.add(grey);}
+ }
+ const photoMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.84,side:THREE.DoubleSide,depthWrite:false});
+ const photoFace=new THREE.Mesh(new THREE.PlaneGeometry(.23,.285),photoMat);photoFace.position.set(first?-.055:0,1.91,.205);photoFace.visible=false;root.add(photoFace);
+ const mask=new THREE.Mesh(new THREE.BoxGeometry(.25,.06,.025),trim);mask.position.set(first?-.055:0,1.91,.205);mask.visible=false;root.add(mask);
+ const leftArm=new THREE.Group();leftArm.position.set(first?-.39:-.31,1.43,0);root.add(leftArm);
+ const rightArm=new THREE.Group();rightArm.position.set(first?.42:.31,1.43,0);root.add(rightArm);
+ function makeArm(pivot,side){
+  const upper=new THREE.Mesh(new THREE.CapsuleGeometry(.074,.34,5,9),cloth);upper.position.y=-.20;upper.rotation.z=side*-.035;pivot.add(upper);
+  const elbow=new THREE.Mesh(new THREE.SphereGeometry(.071,8,7),skin);elbow.position.y=-.40;pivot.add(elbow);
+  const forearm=new THREE.Group();forearm.position.y=-.40;pivot.add(forearm);
+  const sleeve=new THREE.Mesh(new THREE.CapsuleGeometry(.063,.29,5,8),cloth);sleeve.position.y=-.18;forearm.add(sleeve);
+  const cuff=new THREE.Mesh(new THREE.CylinderGeometry(.066,.066,.06,8),trim);cuff.position.y=-.35;forearm.add(cuff);
+  const palm=new THREE.Mesh(new THREE.SphereGeometry(.061,9,7),skin);palm.scale.set(.82,1.1,.72);palm.position.set(0,-.405,.025);forearm.add(palm);
+  for(let i=0;i<4;i++){const finger=new THREE.Mesh(new THREE.CapsuleGeometry(.012,.07,3,5),skin);finger.position.set((i-1.5)*.025,-.48,.062);finger.rotation.z=(i-1.5)*.10;forearm.add(finger);}
+  const thumb=new THREE.Mesh(new THREE.CapsuleGeometry(.014,.06,3,5),skin);thumb.position.set(side*.07,-.43,.04);thumb.rotation.z=side*-.55;forearm.add(thumb);return forearm;
+ }
+ const leftForearm=makeArm(leftArm,-1),rightForearm=makeArm(rightArm,1);
+ const legs=[],lowerLegs=[],shoes=[];
+ for(const side of [-1,1]){
+  const hip=new THREE.Group();hip.position.set(side*.14,.68,0);root.add(hip);
+  const thigh=new THREE.Mesh(new THREE.CapsuleGeometry(.093,.34,5,9),trim);thigh.position.y=-.20;hip.add(thigh);
+  const knee=new THREE.Mesh(new THREE.SphereGeometry(.07,8,7),trim);knee.position.y=-.40;hip.add(knee);
+  const calf=new THREE.Group();calf.position.y=-.40;hip.add(calf);
+  const shin=new THREE.Mesh(new THREE.CapsuleGeometry(.066,.31,5,8),trim);shin.position.y=-.19;calf.add(shin);
+  const shoe=new THREE.Mesh(new THREE.BoxGeometry(.18,.095,.31),boot);shoe.position.set(0,-.39,.075);calf.add(shoe);
+  const sole=new THREE.Mesh(new THREE.BoxGeometry(.19,.025,.32),M.black);sole.position.set(0,-.44,.075);calf.add(sole);
+  legs.push(hip);lowerLegs.push(calf);shoes.push(shoe);
+ }
+ const collar=new THREE.Mesh(new THREE.CapsuleGeometry(.045,.31,3,6),trim);collar.position.set(0,1.56,.025);collar.rotation.z=Math.PI/2;root.add(collar);
+ for(let i=0;i<4;i++){const button=new THREE.Mesh(new THREE.SphereGeometry(.017,6,5),M.gold);button.position.set(.035,1.34-i*.19,.235);root.add(button);}
+ if(female){const shawl=new THREE.Mesh(new THREE.BoxGeometry(.45,.16,.07),mat(0x5a5146,.98));shawl.position.set(0,1.35,.20);shawl.rotation.z=-.07;root.add(shawl);if(lower.includes('anna')||lower.includes('mirella')){const apron=new THREE.Mesh(new THREE.BoxGeometry(.32,.48,.04),mat(0x4d3830,.99));apron.position.set(0,.94,.225);root.add(apron);}}
+ else{const vest=new THREE.Mesh(new THREE.BoxGeometry(.20,.38,.045),trim);vest.position.set(0,1.37,.20);root.add(vest);if(elder){const glasses=mat(0x28251f,.52,{metalness:.35});for(const side of [-1,1]){const lens=new THREE.Mesh(new THREE.TorusGeometry(.048,.008,5,14),glasses);lens.position.set(side*.073,1.94,.192);root.add(lens);}const bridge=new THREE.Mesh(new THREE.BoxGeometry(.07,.01,.01),glasses);bridge.position.set(0,1.94,.19);root.add(bridge);}}
+ if(first){
+  leftArm.position.y+=.11;leftArm.rotation.z=-.24;rightArm.position.y-=.045;rightArm.rotation.z=.14;rightForearm.rotation.z=-.28;leftForearm.rotation.z=.10;
+  const shoulder=new THREE.Mesh(new THREE.SphereGeometry(.20,10,8),trim);shoulder.position.set(-.35,1.49,.015);shoulder.scale.set(1.15,.58,.78);root.add(shoulder);
+  const lapel=new THREE.Mesh(new THREE.BoxGeometry(.11,.65,.06),M.darkWood);lapel.position.set(-.16,1.25,.235);lapel.rotation.z=.32;root.add(lapel);
+  const seam=new THREE.Mesh(new THREE.CylinderGeometry(.012,.02,.52,5),M.rust);seam.position.set(.25,.72,.19);seam.rotation.z=-.18;root.add(seam);
+  root.rotation.z=-.025;root.scale.set(1.04,1.08,.94);
+ }
+ const npc={head,id:'npc_'+name.toLowerCase().replace(/[^a-z0-9]+/g,'_'),type:'npc',object:root,point:root.position,radius:3.4,prompt:'[ E ] SPEAK — '+name.toUpperCase(),name,phase:Math.random()*7,coat,leftArm,rightArm,photoFace,photoKey,leftForearm,rightForearm,legs,lowerLegs,shoes,eyes,lids,blinkTimer:1.8+Math.random()*4,blinkAmount:0,walking:false,cultist:false,fate:'present',profile,isFirst};
+ photoNPCs.push(npc);refreshPhotoNPC(npc);group.userData.interactables.push(npc);return npc;
 }
+
 function registerCultist(npc, dialogue=null) {
   npc.cultist=true; npc.fate='present'; npc.object.userData.cultist=true;
   if(dialogue) npc.dialogue=dialogue;
@@ -672,20 +706,7 @@ function addCropRows(group, cx, cz, rows, length, spacing, kind='maize', seed=1)
     }
   }
 }
-function addManifesto(group, position, rotation, headline, subline='ARCHIVIO 14-B / FOGLIO NON PROTOCOLLATO') {
-  const c=document.createElement('canvas');c.width=768;c.height=512;const ctx=c.getContext('2d');
-  ctx.fillStyle='#b7aa8e';ctx.fillRect(0,0,768,512);
-  for(let i=0;i<9000;i++){ctx.fillStyle=Math.random()>.5?'rgba(20,18,15,.07)':'rgba(255,255,255,.06)';ctx.fillRect(Math.random()*768,Math.random()*512,1+Math.random()*3,1);}
-  ctx.fillStyle='#28241e';ctx.font='bold 46px Georgia';ctx.textAlign='center';
-  headline.split('\n').forEach((line,i)=>ctx.fillText(line,384,205+i*58,690));
-  ctx.font='16px monospace';ctx.fillText(subline,384,443);
-  ctx.strokeStyle='#4b3326';ctx.lineWidth=10;ctx.strokeRect(14,14,740,484);
-  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
-  const poster=new THREE.Mesh(new THREE.PlaneGeometry(2.45,1.63),new THREE.MeshStandardMaterial({map:tex,roughness:1,side:THREE.DoubleSide}));
-  poster.position.set(...position);poster.rotation.set(...rotation);group.add(poster);
-  const nailMat=M.rust;for(const [nx,ny] of [[-1.13,-.72],[1.13,-.72],[-1.13,.72],[1.13,.72]]){const nail=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),nailMat);nail.position.copy(poster.position);nail.position.add(new THREE.Vector3(nx,ny,0));group.add(nail);}
-  return poster;
-}
+
 function addWoodTable(group,x,z,w=2.6,d=1.25,h=.82,seed=1){
   const root=new THREE.Group();root.position.set(x,0,z);group.add(root);
   const n=Math.max(3,Math.round(d/.34)),bd=d/n;
@@ -918,10 +939,7 @@ function buildRoad() {
   const abattoirDoor=addDoor(z.group,27,26.72,'la casa delle bestie','abattoir',[0,0,7.0],true);
   abattoirDoor.radius = 4.8;
   abattoirDoor.requiredClues = 7;
-  addManifesto(z.group, [27, 3.45, 26.78], [0, 0, 0], 'LA CASA\\nDELLE BESTIE', 'INGRESSO / 03:17');
   addLight(z.group, 0xffb35d, 1.25, 7, 27, 2.5, 27.6, { decay: 1.5 });
-  addManifesto(z.group,[-9.5,2.0,-5.8],[0,.12,0],'SVUOTARSI\nPER ESSERE RIEMPITI','AFFISSO DEL CONSORZIO / 1977');
-  addManifesto(z.group,[15.5,1.85,14.1],[0,Math.PI,0],'13 + 1 = 0','FOGLIO APPESO DAL LATO SBAGLIATO');
   // Clue at the roadside mailbox.
   addBox(z.group, -4.5, .63, 20, .55, 1.25, .48, M.rust);
   addBox(z.group, -4.5, 1.32, 20, .7, .09, .58, M.darkWood);
@@ -980,7 +998,6 @@ function buildHome() {
   // A television with no sound, a quiz show frozen on a question.
   addBox(z.group, -1.2, 1.4, -8.2, 2.1, 1.55, .32, M.black);
   const tv = new THREE.Mesh(new THREE.PlaneGeometry(1.75, 1.2), new THREE.MeshBasicMaterial({ map: makeLabelTexture('DOMANDA N. 14', 512, 256), color: 0xb3b1a7 })); tv.position.set(-1.2, 1.42, -8.02); z.group.add(tv);
-  addManifesto(z.group,[-9.78,2.1,-2.6],[0,Math.PI/2,0],'NON ASCOLTARE\nPER CAPIRE','CIRCOLARE 14-B');
   // The room is allowed to breathe: one wall text remains, not a slogan on every surface.
   addCandle(z.group,-5.2,.98,2.0,true);
   addLook(z.group, -4.2, 1.6, -8.1, 'Finestra nord', 'Oltre il vetro, nella nebbia, una fila di figure gira intorno a un fuoco. Una di loro pende da una trave, e il vento non la muove. Si muove solo quando la stanza respira.');
@@ -1154,9 +1171,6 @@ function buildAbattoir() {
   const overhead=addLight(z.group,0xe1d4b4,1.4,13,0,3.8,1.3);overhead.position.y=3.7;
   for(let i=0;i<6;i++){const chain=new THREE.Mesh(new THREE.CylinderGeometry(.012,.016,.8,6),M.rust);chain.position.set(-8+i*3.2,3.35,3.3);z.group.add(chain);}
   // The room contains manifestos that contradict each other, by design.
-  addManifesto(z.group,[-11.78,2.3,-6.2],[0,Math.PI/2,0],'LA CARNE\nRICORDA','PARETE NORD / 1977');
-  addManifesto(z.group,[11.78,2.1,6.4],[0,-Math.PI/2,0],'NON C’È\nNESSUN DISCO','PARETE EST / 03:17');
-  addManifesto(z.group,[0,3.0,-9.78],[0,0,0],'SVUOTARSI È\nUNA FORMA DI FEDE','MANIFESTO 13');
   // The cult leader is hidden at the far end; his face is turned away until spoken to.
   const leader=makeNPC(z.group,0,-7.2,'Il Primo',0x171716,1);leader.object.rotation.y=Math.PI; if (leader.head) leader.head.material = headMaterial();leader.dialogue={line:'Non sono il capo. Sono il primo che ha capito che la stanza non era vuota: eravamo noi a occupare troppo spazio.',choices:['Togli il nastro.','Dammi il tuo posto.'],replies:['Non c’è nastro da togliere. La macchina gira senza bobina.','Il posto non è mio. È quello che resta quando rinunci al tuo nome.']};
   const eventMarker=new THREE.Mesh(new THREE.BoxGeometry(.34,.14,.34),M.clue);eventMarker.position.set(0,.12,1.7);z.group.add(eventMarker);
@@ -1225,7 +1239,6 @@ function buildCellar() {
   }
   const tapePath=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-.36,1.48,.47),new THREE.Vector3(-.13,1.33,.5),new THREE.Vector3(.08,1.33,.5),new THREE.Vector3(.36,1.48,.47)]),18,.018,5,false),M.black);reelDeck.add(tapePath);
   for(let i=0;i<5;i++){const knob=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.075,12),M.gold);knob.rotation.x=Math.PI/2;knob.position.set(-.85+i*.42,.76,.43);reelDeck.add(knob);}
-  addManifesto(reelDeck,[0,1.55,-.03],[0,0,0],'NON C’È\nNASTRO','ROTORE 14-B / 03:17');
   // Thirteen chairs, one turned towards the viewer.
   for (let i = 0; i < 13; i++) {
     const a = i / 13 * Math.PI * 2; const x = Math.cos(a) * 5.0; const zz = Math.sin(a) * 4.1 + .3;
@@ -2990,7 +3003,7 @@ function animateZone(t, dt) {
       if(n.head){const lurch=n.walking?1+.4*Math.sin(t*.0031+n.phase*3):1;n.head.rotation.z=Math.sin(t*.0009+n.phase)*.12*lurch+(n.walking?Math.sin(t*.008+n.phase)*.07:0);n.head.rotation.x=n.walking?.16:-.05+Math.sin(t*.0007+n.phase)*.05;n.object.rotation.z=n.walking?Math.sin(t*.0045+n.phase)*.035:Math.sin(t*.0013+n.phase)*.012;}
       n.blinkTimer-=dt;if(n.blinkTimer<=0){n.blinkAmount=Math.min(1,n.blinkAmount+dt*15);if(n.blinkAmount>=1){n.blinkTimer=.12;n.blinkAmount=Math.max(0,n.blinkAmount-dt*15);}if(n.blinkAmount===0)n.blinkTimer=2.4+Math.random()*4.8;}
       n.lids?.forEach(lid=>{lid.scale.y=.08+n.blinkAmount*.72;lid.position.y=1.783-n.blinkAmount*.004;});
-      if(n.photoBody.visible)n.photoBody.material.opacity=.70+Math.sin(t*.00065+n.phase)*.06;
+      
     });
   }
 }
