@@ -395,7 +395,7 @@ function addClueMesh(group, pos, title, description, id, kind = 'paper', options
 function makeNPC(group,x,z,name,coatColor=0x272725,variant=0){
  const root=new THREE.Group();root.position.set(x,0,z);group.add(root);
  const lower=(name||'').toLowerCase(),profile=profileForNPC(name,variant);
- const female=profile==='woman',elder=profile==='oldman'||profile==='elder',first=lower==='the first'||lower==='il primo';
+ const female=profile==='woman',elder=profile==='oldman'||profile==='elder',first=lower==='the first'||lower==='il primo',isFirst=first;
  const skin=mat([0x88735f,0x9b826d,0x716052,0x8d7a68,0x6b5c51][(name||'').length%5],.96,{map:TEX.plaster,bumpScale:.022});
  const cloth=mat(coatColor,1,{map:TEX.wood,bumpScale:.045}),trim=mat(first?0x1d1b18:(variant===0?0x39352e:0x292b28),1,{map:TEX.wood});
  const hairColor=elder?0x77736b:(female?0x211c19:0x26221e),hair=mat(hairColor,1,{map:TEX.wood,bumpScale:.02});
