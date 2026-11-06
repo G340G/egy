@@ -369,7 +369,7 @@ function makeEvidenceCanvas(title, id, imageKey='oldman') {
   };draw();const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
   evidenceRefreshers.push(()=>{draw();t.needsUpdate=true;});return t;
 }
-function addClueMesh(group, pos, title, description, id, kind = 'paper') {
+function addClueMesh(group, pos, title, description, id, kind = 'paper', options = {}) {
   const root = new THREE.Group(); root.position.copy(pos); group.add(root); let object;
   const imageKey=({clipping:'oldman',mass:'elder',photo:'man',voicemail:'woman'})[id]||'oldman';
   if (kind === 'paper') {
@@ -385,7 +385,7 @@ function addClueMesh(group, pos, title, description, id, kind = 'paper') {
   }
   root.add(object);
   const glow = new THREE.PointLight(0xd5b27b, .23, 2.5); glow.position.y = .5; root.add(glow);
-  const entry = { id, type: 'clue', object: root, point: root.position, radius: 3.0, prompt: `[ E ] RACCOGLI — ${title.toUpperCase()}`, title, description, kind };
+  const entry = { id, type: 'clue', object: root, point: root.position, radius: 3.0, prompt: `[ E ] COLLECT — ${title.toUpperCase()}`, title, description, kind, ...options };
   group.userData.interactables.push(entry); return root;
 }
 function makeNPC(group,x,z,name,coatColor=0x272725,variant=0){
@@ -1025,8 +1025,8 @@ function buildHome() {
   const annaMarker=new THREE.Mesh(new THREE.BoxGeometry(.22,.08,.22),M.clue);annaMarker.position.set(-5.2,.12,1.2);z.group.add(annaMarker);
   z.interactables.push({id:'anna_scene_trigger',type:'event',object:annaMarker,point:annaMarker.position,radius:3.2,prompt:'[ E ] GUARDA IL POSTO VUOTO',run:()=>triggerAnnaScene(z,annaMarker)});
   // Evidence in plain sight, once you stop looking for the album.
-  addClueMesh(z.group, new THREE.Vector3(-5.2, 1.1, 2.0), 'Lista dei posti', 'Una lista di tredici nomi. Sotto, una quattordicesima riga cancellata con tanta pressione da aver inciso il foglio.', 'list', 'paper');
-  addClueMesh(z.group, new THREE.Vector3(5.8, 1.45, -5.0), 'Battimenti', 'Una forcella d’accordatura. Sul manico è inciso: A=415. La nota non coincide con quella che hai in testa.', 'fork', 'metal');
+  addClueMesh(z.group,new THREE.Vector3(-5.2,1.1,2.0),'Seating List','A list of thirteen names. Beneath them, a fourteenth line has been erased so forcefully that it has scored the paper.','list','paper',{requiresFlag:'talked-ines',blockedHint:'Speak with Ines before examining the seating list.'});
+  addClueMesh(z.group,new THREE.Vector3(5.8,1.45,-5.0),'Tuning Fork','A tuning fork. A=415 is engraved on the handle. The note does not match the one in your head.','fork','metal',{requiresFlag:'talked-ottavio',blockedHint:'Speak with Ottavio before examining the tuning fork.'});
   addClueMesh(z.group, new THREE.Vector3(1.2, .06, 6.1), 'Trave incisa', 'Nel legno sono incisi ricordi che non sembrano appartenere alla stessa persona: un cane, una festa, una stanza senza porte.', 'beam', 'wood');
   const exit = addDoor(z.group, 0, 8.95, 'la strada', 'road', [0, 0, -3.4]); exit.prompt = '[ E ] TORNA ALLA STRADA';
   const hatch = addDoor(z.group,8.7,-6.2,'la cantina','cellar',[0,0,4.5],true,{rotationY:Math.PI/2,style:'hatch'}); hatch.prompt = '[ E ] SCENDI — LA CANTINA';
@@ -1079,7 +1079,7 @@ function buildChurch() {
   const remo = makeNPC(z.group, 1.5, -8.2, 'Don Remo', 0xddd7c9, 1);
   remo.dialogue = { line: 'La porta non è chiusa. È la stanza a essere dall’altra parte.', choices: ['Che cosa c’è nel disco?', 'Perché la croce è girata?'], replies: ['Un suono che non ha bisogno di essere ascoltato. Un posto che non ha bisogno di essere abitato.', 'Perché la terra guarda il cielo da sotto. Non è una punizione. È una prospettiva.'] };
   const bellMarker=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.18),M.clue);bellMarker.position.set(-6.8,.12,-5.8);z.group.add(bellMarker);z.interactables.push({id:'bell_event',type:'event',object:bellMarker,point:bellMarker.position,radius:2.8,prompt:'[ E ] TIRA LA CORDA DELLA CAMPANA',run:()=>{audio?.bell();triggerKillScene();}});
-  addClueMesh(z.group, new THREE.Vector3(-5.8, 1.7, -13.6), 'Ordine della Messa', 'Il foglio riporta una sequenza di stazioni. La numerazione salta dall’undicesima alla quattordicesima. Sul retro: “nessun funerale”.', 'mass', 'paper');
+  addClueMesh(z.group,new THREE.Vector3(-5.8,1.7,-13.6),'Mass Register','The page lists a sequence of stations. The numbering jumps from the eleventh to the fourteenth. On the reverse: “no funeral.”','mass','paper',{requiresFlag:'talked-remo',blockedHint:'Speak with Father Remo before examining the Mass Register.'});
   addDoor(z.group,0,11.9,'il sagrato','road',[0,0,-29],false,{style:'roman'});
   z.mist = addFog(z.group, 38, 36, 0xb7bcb8, 67);
   z.solids.push({ minX: -9, maxX: -8.7, minZ: -17, maxZ: 12 }, { minX: 8.7, maxX: 9, minZ: -17, maxZ: 12 }, { minX: -9, maxX: 9, minZ: -17.3, maxZ: -17 }, { minX: -9, maxX: -5, minZ: 11.7, maxZ: 12 }, { minX: 5, maxX: 9, minZ: 11.7, maxZ: 12 });
@@ -1100,8 +1100,8 @@ function buildRuin() {
   addLight(z.group, 0x9caaa4, .45, 8, -4.5, 2.8, -6.0);
   const woman = makeNPC(z.group, 1.4, -.5, 'La vedova', 0x2d302e, 0);
   woman.dialogue = { line: 'Mio marito non è morto. Ha soltanto smesso di rispondere al telefono. Sono passati undici inverni.', choices: ['Perché tieni la luce accesa?', 'Conoscevi la registrazione?'], replies: ['Perché la notte entra dalle prese. La luce la tiene occupata.', 'Il tecnico venne con una valigia vuota. Se ne andò con una canzone che non ricordo.'] };
-  addClueMesh(z.group, new THREE.Vector3(-2.2, .95, -4.4), 'Fotografia bruciata', 'Una fotografia della chiesa nel 1977. In un angolo, quasi fuori dall’inquadratura, si vede una piccola stufa a gas dietro il coro.', 'photo', 'paper');
-  addClueMesh(z.group, new THREE.Vector3(5.0, .12, 1.0), 'Segreteria telefonica', 'Una microcassetta senza etichetta. Sul nastro si sente soltanto il clic del tasto REC e qualcuno che inspira prima di parlare.', 'voicemail', 'metal');
+  addClueMesh(z.group,new THREE.Vector3(-2.2,.95,-4.4),'Burned Photograph','A photograph of the church in 1977. In one corner, almost outside the frame, a small gas heater can be seen behind the choir.','photo','paper',{requiresFlag:'talked-widow',blockedHint:'Speak with the Widow before examining the burned photograph.'});
+  addClueMesh(z.group,new THREE.Vector3(5.0,.12,1.0),'Answering Machine','An unlabelled microcassette. The tape contains only the click of the REC button and someone inhaling before speaking.','voicemail','metal',{requiresFlag:'talked-widow',blockedHint:'Speak with the Widow before examining the answering-machine tape.'});
   addDoor(z.group, 0, 7.95, 'la strada', 'road', [-28, 0, -2]);
   z.mist = addFog(z.group, 25, 20, 0xb2b7b3, 18);
   z.solids.push({ minX: -8, maxX: -7.7, minZ: -8, maxZ: 8 }, { minX: 7.7, maxX: 8, minZ: -8, maxZ: 8 }, { minX: -8, maxX: 8, minZ: -8.2, maxZ: -8 }, { minX: -8, maxX: -2.5, minZ: 7.7, maxZ: 8 }, { minX: 2.5, maxX: 8, minZ: 7.7, maxZ: 8 });
@@ -1499,6 +1499,7 @@ function updateProgress() {
 function updateJournalCount(){ $('journal-total').textContent = `${journal.length} OGGETTI CATALOGATI`; $('inventory-count').textContent=String(journal.length); }
 function collectClue(item) {
   if (collected.has(item.id)) return;
+  if (item.requiresFlag && !storyFlags.has(item.requiresFlag)) { showToast(item.blockedHint || 'Speak with the relevant person first.'); return; }
   collected.add(item.id);
   journal.push({ id: item.id, title: item.title, description: item.description, kind: item.kind || 'documento', zone: currentZone });
   persistEvidenceProgress();
@@ -1538,11 +1539,13 @@ function openDialogue(npc) {
 function chooseDialogue(npc, index) {
   let reply = npc.dialogue?.replies?.[index] || 'The answer comes from a room that does not exist.';
   const lower=(npc.name||'').toLowerCase();
-  if(lower==='ines'){storyFlags.add(index===0?'ines-trust':'ines-betrayed');}
+  if(lower==='ines'){storyFlags.add(index===0?'ines-trust':'ines-betrayed');storyFlags.add('talked-ines');}
   if(lower==='sergio'){storyFlags.add(index===0?'sergio-truth':'sergio-silence');}
   if(lower==='dario'){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
   if(lower==='il primo'&&!npc.isOpeningPrimo){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
-  if(lower==='ottavio'&&index===1)storyFlags.add('ottavio-audio');
+  if(lower==='don remo'||lower==='father remo'){storyFlags.add('talked-remo');if(index===1){storyFlags.add('wick-truth');refreshCandlePrompts();showToast('THE ALTAR IS A FUSE. BREAK THE THREE WICKS.');}}
+  if(lower==='la vedova'||lower==='the widow')storyFlags.add('talked-widow');
+  if(lower==='ottavio'){storyFlags.add('talked-ottavio');if(index===1)storyFlags.add('ottavio-audio');}
   if(lower==='anna')storyFlags.add(index===0?'anna-mercy':'anna-table');
   $('subtitle').textContent = reply; speakVoice(reply,npc.name); $('dialogue-options').innerHTML = '<button class="dialogue-option" id="dialogue-end"><b>[↵]</b>Say nothing more.</button>'; 
   $('dialogue-end').addEventListener('click', closeDialogue);
