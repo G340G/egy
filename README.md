@@ -1,130 +1,86 @@
 # EPISTASSI — THE LISTENING / THE THIRTEEN CUT
 
-A first-person psychological horror investigation in a fictional stretch of the Po Valley. The central idea is a group of thirteen people who want to empty themselves so that an unheard recording can fill them. The album is never played: the game builds dread from the room, the bodies, the objects and the sounds that remain around it.
+A first-person psychological horror investigation set in a fictional stretch of the Po Valley. Thirteen people have gathered around an unheard record called **The White**. They want to empty themselves so that something can occupy the space they leave behind. The record is never played. The game asks whether there was ever an album to hear, or whether the room, its machinery and the people waiting inside it became the recording.
 
-## Run locally
+The atmosphere combines industrial decay, domestic ritual, damaged Catholic forms, winter fields, damp interiors and brief images that surface like involuntary memories. The horror is built around attention: what the player watches, what they choose not to interrupt, and the moment an image becomes evidence.
 
-- macOS: double-click `start-local.command`. If it refuses to open, run `chmod +x start-local.command` once in this folder, then try again.
-  For git, store the executable bit with `git update-index --chmod=+x start-local.command` before you push (uploading through the GitHub website drops it).
-- Windows: double-click `start-local.bat`.
-- Or run `python3 -m http.server 8765` in this folder and open `http://localhost:8765/`.
+## The central ambiguity
 
-Use a current desktop browser with WebGL. Do not open `index.html` as a `file://` document. Three.js 0.160.0 is loaded from a pinned jsDelivr URL, so an Internet connection is required for the engine and for the credited archival portrait photographs. If those photographs fail, procedural 3D faces remain.
+The winter 1977 report lists thirteen deaths in a country church at 03:17. A portable gas heater, a sealed room and a blocked air intake suggest a possible ventilation failure. The coroner's copy still says **cause undetermined**. Carbon monoxide is a theory within the story, not a confirmed solution.
+
+The empty reel transport turns without tape. Its VU meters do not rise. Ottavio, who is deaf, claims to have kept the only copy of the record. The room may have been recorded as sound; it may be what remains when sound is removed. The dead cannot verify either account.
+
+The cult has made a theology out of an absence. Nietzsche's sentence about willing nothingness appears in a battered paperback, but the timings in its margins belong to Corrado. A second line has been added by hand: *What is falling must also be pushed.* The book does not identify who pushed anyone. The margin lets the reader see how responsibility can be disguised as interpretation.
+
+## Story route
+
+1. **The farmhouse.** Meet Ines and Ottavio before examining the evidence they keep. Ines's warmth is not fanaticism: her thermos connects the house to Gabri's death, and she remains the person who can still care for another body. Ottavio is deaf, yet insists he listened by placing his jaw against the table and feeling the motor stop.
+2. **The wall.** After speaking with both of them, listen through the thin partition. A voice gives Dario a task. Dario asks where to stand. Tobia hears the instruction and does not open the door. That silence is recorded as an action in the journal.
+3. **The grave and the church.** Recover the name beneath the willow, question the Widow and speak with Don Remo. He continues to wear the collar and perform the gestures of a vocation whose addressee no longer answers. The altar's instructions are deliberately deceptive. The bell sequence makes the player's hand part of Dario's martyrdom: Walter carries out the order while Tobia keeps the rope moving.
+4. **The dark archive.** Three altar candles open the cellar's side door. The dark room is a maze of chairs, tables, partitions and papers. The flashlight reveals six records: a radiant gas heater, wax earplugs, Corrado's paperback, an empty reel transport, the coroner's copy and fourteen invented signs scratched into the plaster. Corrado hunts when the beam moves away. The heater report remains inconclusive.
+5. **The slaughterhouse.** A bedsheet, a 16 mm projector and thirteen seats turn the room into a private cinema. The player must take a seat and watch a silent collapse. A child claps before the body reaches the floor. The image arrives first; the sound comes later. The screening is required before the final platter can be heard.
+6. **The tea at 03:17.** Return to The First after searching the archive. Corrado explains why he wore the earplugs: he wanted to keep the image without hearing the sound. Ines brings the tea. Corrado watches the dust settle. His fall appears before its sound; Ines remains, and the house still has someone to open the door for the next arrival.
+7. **The platter.** With the eight main clues, the altar rejected, the dark archive searched, Corrado's tea scene witnessed and the slaughterhouse screening completed, the player can approach The White. The ending does not resolve whether the room was the recording or merely the place where people learned to hear one.
+
+After the forest chase, an optional **Pastorale** trail can be recovered at the paddy, grain field and canal reeds. The Mass has contracted to a few gestures; mourning moves out of the church and into water, crops and trees. No funeral is held. The landscape inherits the interval. The fourth, testimony ending is available only after the grave name and all three pastoral intervals have been recorded.
+
+## The people
+
+- **Ines** serves warmth without demanding belief. She carried the thermos to Gabri, notices Tobia's nosebleed and wipes it without asking what caused it. After Corrado's death she remains, making care the institution's last surviving function.
+- **Ottavio** is deaf, yet the only person entrusted with the record. His evidence cannot be checked by anyone else.
+- **Corrado / The First** is a changing presence: welcoming at the porch, evasive in the slaughterhouse, a hunter in the dark archive. His language borrows philosophy and turns it into a way to watch without hearing.
+- **Dario** believes in The White more sincerely than the others. His faith makes him useful to the people who need a martyr.
+- **Walter** turns obedience into an identity. He does not need to decide what the task means.
+- **Pino** doubts the rite and runs toward the wheat field. The combine follows him; the sound of the collapse arrives after the image.
+- **Anna** keeps serving an empty place. Her soup is set over a trowel, placing nourishment and the disturbance of a grave beneath the same table.
+- **Marta** writes memoirs in a sunshine that was never there. Her false golden memory is punctured by the body's involuntary signs.
+- **Gabri** wanted to be seen. In the car, he mistook the thermos for a gift.
+- **Sergio** stayed for company after he stopped believing. He heard the plan for Dario and did not warn him.
+- **Livia** lost her speech but kept the melody. **Franco** turns butchery into liturgy. **Don Remo** keeps the gestures of a vocation after faith has emptied out.
+
+## Props and spaces
+
+The world uses recognisable objects rather than generic display blocks wherever the object carries story weight: a 1970s saloon car, an enamel thermos, a radiant LPG heater with ceramic panels and hose, wax earplugs in a brass case, a reel-to-reel transport, a 16 mm projector, a cast-metal church bell with clapper and rope, a turntable cabinet, a trowel, tableware, wooden chairs and a rusted combine harvester. The dark archive and the slaughterhouse use damp plaster, brick, timber, metal and paper to keep the spaces materially grounded.
+
+The four slaughterhouse forms are sculptural and stylised rather than anatomically graphic. The game's visual language is intentionally degraded: film grain, brief flash images, worn materials, fog, unstable light, and a camera that sometimes behaves like an observer rather than a neutral first-person view.
 
 ## Controls
 
-- WASD / arrows: move (does not require pointer lock)
-- Mouse: look; when pointer lock is refused, hold left mouse and drag
-- E: interact, speak, examine
-- F: flashlight; Shift: run; Q: hold breath
-- Tab: journal; M: toggle sound
-- 1 / 2 or click: dialogue choices; Esc: close dialogue
+- **WASD / arrow keys:** move
+- **Mouse:** look; if pointer lock is refused, hold the left mouse button and drag
+- **E:** interact, speak, examine, take a seat or use an object
+- **F:** flashlight
+- **Shift:** run
+- **Q:** hold your breath
+- **Tab:** journal
+- **M:** toggle sound
+- **1 / 2 or click:** dialogue choices
+- **Esc:** close dialogue
 
-## Narrative systems
+The game whispers through filtered breath and syllable-like Web Audio textures. It does not use speech synthesis. The forbidden record itself is never played.
 
-- **Thirteen cult members** live in the farmhouse. Their fates are driven by discoveries and decisions: some walk away into impossible thresholds, others collapse in front of the player and leave a stain. At the turntable, every remaining member is brought visibly into the cellar and receives a fate before the final choices unlock; no cultist is removed only by a hidden counter.
-- **Il Primo**, the hidden leader, speaks from the slaughterhouse. His dialogue and Dario's earlier words leave his identity uncertain.
-- **The slaughterhouse** is a new traversable location: four suspended, sculptural bovine forms, hoists, rusted rails, chains, damp brick, mould, manifestos and a threshold that returns the player to the same room from the wrong side. The imagery takes broad inspiration from Francis Bacon's distorted bodies and enclosed stage-like spaces, without recreating a specific painting.
-- **The Po Valley** includes maize cultivation, winter wheat, waterlogged rice plots, canals, poplar-like trees, moving branches, wind, rain, lightning, fog and an accelerated day/night cycle.
-- **Eight discoverable documents** lead to the cellar. The new ledger in the slaughterhouse is required; it lists thirteen names against the same time, 03:17.
-- **Three final choices** lead to different endings: surrender your name to the empty place, open the windows and expose the carbon-monoxide explanation behind the 1977 deaths, or preserve the recording and the cult's ambiguity. Prior dialogue and the impossible passage change the wording and meaning of certain endings.
-- **NPC animation** includes articulated arms and legs, slow walking, weight shifts, blinking eyelids and gaze. Faces retain the archival-photo treatment with procedural geometry underneath.
-- **Sound** is entirely generated in Web Audio: wind, room tone, chain and hoist noise, hinges, drawers, clocks, machine bearings, tools, pipes, ratchets, distant knocks and a distinctive cut-air motif at each cultist's death. The forbidden record itself is never played.
-- **Cinematic framing** occasionally pulls away from the player's eyes, hides the view behind foreground geometry and briefly stages the player as an observed figure.
+## Run locally
+
+- macOS: double-click `start-local.command`. If it refuses to open, run `chmod +x start-local.command` once in this folder.
+- Windows: double-click `start-local.bat`.
+- Or run `python3 -m http.server 8765` in this folder and open `http://localhost:8765/`.
+
+Use a current desktop browser with WebGL. Do not open `index.html` as a `file://` document. Three.js 0.160.0 is loaded from a pinned jsDelivr URL, so an Internet connection is required for the engine and credited archival portrait photographs. If those photographs fail, procedural 3D faces remain.
 
 ## Publishing with GitHub Pages
 
-1. Extract the ZIP and upload all its contents directly into the repository root (`index.html`, `style.css`, `js/`, `.github/`, launchers and scripts).
-2. In Settings → Pages, choose **GitHub Actions** as the source.
-3. Push to `main` or `master`, or run the workflow manually from Actions.
+1. Upload the repository contents to the root of the repository.
+2. In **Settings → Pages**, choose **GitHub Actions** as the source.
+3. Push to `main` or `master`, or run the workflow manually from **Actions**.
 4. Open the Pages URL after the deployment job succeeds.
 
-The included workflow prepares `_site/` and deploys it. The project does not require a local `node_modules` folder.
+The included workflow builds and deploys the site. A local `node_modules` folder is not required.
 
-## Notes and limitations
+## Technical notes
 
-- The photographic face fragments use external archival images credited in `ASSET_CREDITS.md`; they are not scraped indiscriminately from random personal profiles.
-- Spoken lines are whispered: filtered breath and syllable-like noise, with subtitles that flicker while someone speaks. No speech synthesis is used.
-- All geometric bodies, the carcass room, landscapes, plants, posters and environmental sounds are procedurally created. The bovine figures are surreal sculpture-like forms, not realistic anatomical models.
-- The accelerated day/night cycle completes roughly every 4.5 minutes of active play.
-- No analytics or browser fingerprint collection is included. The browser may show a generic anti-fingerprinting notice because the game uses WebGL and Canvas for ordinary 3D rendering and textures.
-
-## Version 3.2 additions
-
-- **Zoom and look.** Hold Z or the right mouse button to zoom. Press E on a window, a painting or the altar to look closer; the lens focuses on what you are looking at and blurs everything further away.
-- **Lens.** A depth-of-field pass keeps the focus on the object in front of you. Add `?lowfx` to the URL to turn it off on slower machines.
-- **Lamps and candles.** Candles flicker in the house, the church, the cellar and the abattoir. In the church, light the three candles on the altar.
-- **Windows.** The house's north wall and the abattoir's east wall have openings. Through them you can see distant fires, rings of figures and a body swinging from a gallows.
-- **Il Primo.** Once you have collected enough evidence, or after certain dialogue choices, a tall figure begins to walk toward you whenever you are not looking at him. The music tightens and the heartbeat quickens as he approaches. If he reaches you, the game ends.
-- **Missions.** Six objectives are shown in the objective panel. They include digging the grave under the willow, which needs the shovel from the ruin and a conversation with Ottavio or Sergio.
-- **Choices with consequences.** What you say to Ottavio, Ines, Dario, Anna and Sergio can open or close missions, release or summon cultists, and wake Il Primo. A fourth ending, "Leggi i nomi", appears only after you have dug up the grave.
-- **Whispers.** Spoken lines are whispered instead of read aloud: filtered breath and syllable-like noise, panned left or right depending on who speaks.
-- **Bacon style.** Heads and torsos are distorted, and the whole image is graded with umber shadows, a radial smear and a dark vignette that deepens with fear.
-
-## Version 3.3 additions
-
-- **Relics.** Nine small glowing objects are hidden across the rooms and the road. Pick them up with E. Each one is kept in the journal, and collecting all nine reveals a tenth, unnamed entry.
-- **Field rituals.** Distant fires, rings of figures and bodies on posts are visible across the fields on the road.
-- **Macabre details.** Skulls on fence posts, the altar and the table, jars of something pale, bone chains hanging from the beams, and crows.
-- **Wording.** The 1977 newspaper clipping now reads as a report of thirteen people found dead in a country church, with the recorder still running beside them.
-
-## Version 3.4 additions
-
-- **The car.** Il Primo offers a ride once you have agreed to his tasks, or straight away if you ask him for somewhere quiet. The drive into the forest is dusk-dark, with the industrial glow on the horizon and the car's headlights on the trees.
-- **The chase.** At the clearing he gets out and follows you. He hesitates when you watch him, lunges when you turn away, and sometimes lies about the way back. Reach the lamp at the starting point to return to the road; if he catches you, the game ends.
-- **The confession.** Enter the booth in the church to hear what the priest knows about the 1977 register, including your name in it. A hand rises behind the grille, then sinks back.
-- **Il Primo.** He is friendly on the surface and gives you tasks that mean something: dig the grave, light the candles. Each one leads you closer to the album and to being emptied. His dialogue changes as you progress.
-- **Smoke and fire.** Ritual fires have flames and rising smoke, and each ring of figures is marked on the ground.
-- **Industry.** Offices with lit windows, stacks, pipes, drill rigs and red beacons sit on the horizon. The drills make noise and the smoke rises.
-- **Relics.** Each of the nine relics is modelled after what it represents: a cassette, a child's shoe, a wax-sealed envelope, a matchbox with a tooth, a Mass programme, a radio, a butcher's key, a glass eye and a wing bone.
-- **Skulls removed.**
-
-## Still to do
-
-- Italian text remains in parts of `js/game.js` (dialogue, toasts, the cellar and abattoir scenes, the 1977 clipping) and in some of `index.html`. New and rewritten text is in English.
-- The album and the voiding of the members are present but not yet reworked as the centre of the story.
-- The new scenes are untested in a browser. Check the car, the chase and the confession first.
-
-## Version 3.5 additions
-
-- **Photographic textures.** The wood floors and panelling use a photograph of worn wooden planks, and the building walls use a photograph of flaking plaster. Both are in `assets/textures/` (Unsplash Licence; see `ASSET_CREDITS.md`). Serve the game from a web server, not as a local file, so the photos load.
-- **More surfaces.** Grass covers the road and forest ground, rust covers the industrial steel, and the metal rails, car paint and industrial steel have a brushed-metal texture. These are generated in the browser.
-- **Opening.** The game begins in the dark. The camera walks out of the fog behind you, and a narration whispers about why you are so easy to empty. Control returns when the walk ends.
-- **Wind.** Gusts move through the sound and carry dust and leaves past the camera on the road and in the forest. The wind is almost silent indoors.
-
-## Version 4 changes
-
-- **Il Primo's face** is painted after Francis Bacon's *Head VI* (1949), a screaming head in a dark cage of brushed strokes. It is used for both Il Primo characters and for his hunter form.
-- **The porch Il Primo** leaves after your first conversation with him. He returns as the hunter in the slaughterhouse, and in other rooms once you have completed enough missions.
-- **Difficulty** rises with each completed mission. He is also faster when you are not looking at him.
-- **One conversation per person.** Il Primo is the exception, because he returns with new tasks.
-- **Rewards and penalties** come from the choices you make: a folded map, lower fear, a key that reveals two paintings in the house, or a closer enemy, a jump scare, or a trip. The table is `CHOICE_EFFECTS` in `js/game.js`. It is assigned from the flags in `chooseDialogue`, so check it against the dialogue text.
-- **Zone soundscapes.** A chant-like choir in the church, dissonant stabs in the slaughterhouse, scraping tones in the house, and drones elsewhere.
-- **Finale.** Walk toward a fire in thickening fog while the noise thins to white. The eye appears once, and the screen goes white before the ending screen.
-- A few Italian lines in the code I changed are now in English.
-
-## Not done in this version
-
-- Downloading new textures was not possible in this environment (no internet access). Only the two photographs you supplied are used.
-- Persons are not more anatomically detailed, and items are not spread out or made more realistic.
-- Most of the Italian text is still in `js/game.js` and `index.html`. The lines this version touched are translated.
-- The "floating signs and texts" were not identified. Point me to them and I'll remove them.
-- The complex, gradual relationship with Il Primo and the claustrophobic escalation are only partly built: the enemy's return and difficulty tiers are in place, but the new story beats are not written yet.
-
-## Version 5 changes
-
-- **Floating sign removed.** The unsupported "MOTORE / 14-B" panel in front of the house is gone. Remaining signs are mounted on posts or boards.
-- **Intro ground.** The floor now extends well beyond the zone bounds, the intro camera looks down at the ground, and the fog is thinned during the walk. The "no ground" gap should be gone.
-- **Reset on loss.** Losing clears the saved evidence, and so do the retry and return buttons, so a new game starts clean.
-- **Final cellar.** The record is in the far corner of the cellar, where the lamp barely reaches. Il Primo jumps to a new spot every few seconds, and he laughs each time.
-- **Story and claustrophobia.** Each completed mission brings a whispered monologue from Il Primo. Fog thickens, the vignette tightens and the grain grows as the tiers rise.
-- **Cinematic framing.** Letterbox bars slide in during scenes.
-- **Choir.** The church chant and the ambience elsewhere are louder.
-- **Hidden details.** A child's drawing, tally marks, a sack on a fence post, a hymn sheet under a pew and a bowl of water. Each has a look-closer note.
-
-## Still to do
-
-- The Italian text that is not part of the changed code remains in `js/game.js` and `index.html`.
-- The story is still shorter than the full script. The monologues cover the psychology of Il Primo, but the relationship with him still needs more scenes.
-- The "1+13 = 0" sign was not found in the code. If it is a different panel, point me to it.
-
+- Faces combine procedural geometry with credited archival-photo textures listed in `ASSET_CREDITS.md`.
+- NPCs use articulated arms and legs, gaze, blinking and posture shifts.
+- Audio is generated in Web Audio: wind, room tone, machinery, chains, hoists, hinges, clocks, pipes, distant knocks and delayed collapse sounds.
+- The environment includes industrial yards, canals, winter wheat, maize, waterlogged rice plots, trees, fog, rain, lightning and an accelerated day/night cycle.
+- Add `?lowfx` to the URL to disable the depth-of-field lens effect on slower machines.
+- No analytics or browser fingerprint collection is included. The browser may show a generic anti-fingerprinting notice because the game uses WebGL and Canvas for rendering and textures.
