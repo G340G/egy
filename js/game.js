@@ -994,7 +994,7 @@ function triggerKillScene() {
       journal.push({id:'bell-rope',title:'The Rope in Your Hand',description:'You held the bell rope while Walter stood behind Dario. You did not choose the order, but you kept the bell moving. Your hand was steady. The sound reached the nave after Dario had fallen.',kind:'witness account',zone:'church'});updateJournalCount();
       flashFragment('collapse',175);setTimeout(()=>{audio?.mechanicalNoise(.24,620,.9,.13,0);audio?.mechanicalTone(93,36,1.1,'sawtooth',.075,0);},1080);
       queueCultFate('the nave',executioner,'vanish');scheduleCultSceneFates(1,'the bell','collapse');
-      fear=Math.min(1,fear+.28);glitchPulse=1.2;controls.lock();showToast('THE BELL CONTINUES AFTER YOUR HAND OPENS.');
+      fear=Math.min(1,fear+.28);glitchPulse=1.2;requestMouseLock();showToast('THE BELL CONTINUES AFTER YOUR HAND OPENS.');
     };
   }};
   z.interactables.push(event);
@@ -1023,7 +1023,7 @@ function triggerAnnaScene(z, annaMarker) {
         storyFlags.add('anna-empty-place');stain.material.opacity=.42;audio?.mechanicalEvent('drawer');glitchPulse=1.1;
         showToast('THE CHAIR WAS EMPTY BEFORE YOU MADE YOUR CHOICE.');
       }
-      controls.lock();
+      requestMouseLock();
     };
   }};
   z.interactables.push(ev);
@@ -1444,7 +1444,7 @@ function buildAbattoir() {
   z.interactables.push({id:'abattoir_ropes',type:'event',object:eventMarker,point:eventMarker.position,radius:3.0,prompt:'[ E ] CHOOSE WHAT TO DO WITH THE HOOKS',run:()=>{
     controls.unlock();dialogueOpen=true;$('speaker').textContent='THE ROOM / THE FOUR BODIES';$('subtitle').textContent='The chains are under tension. A voice comes from the floor: “If you free them, the room is left without witnesses. If you leave them, you become part of the inventory.” When you look again, one of the bodies has changed position.';speakVoice($('subtitle').textContent,'THE ROOM');$('subtitle-wrap').classList.add('visible');
     $('dialogue-options').innerHTML='';
-    [['CUT THE CHAINS','release'],['LEAVE EVERYTHING AS IT IS','keep']].forEach(([label,id])=>{const b=document.createElement('button');b.className='dialogue-option';b.textContent=label;b.onclick=()=>{storyFlags.add(id==='release'?'released':'complicit');storyFlags.add('carcasses-decided');if(id==='release'){carcasses[1].rotation.z=.8;carcasses[1].position.y=-.3;audio?.mechanicalEvent('hoist');fear=Math.min(1,fear+.2);scheduleCultSceneFates(2,'the chains','collapse');}else{carcasses[0].rotation.z=.42;storyFlags.add('leader-trust');scheduleCultSceneFates(2,'the silence of the hooks','vanish');}if('speechSynthesis'in window)window.speechSynthesis.cancel();$('subtitle-wrap').classList.remove('visible');dialogueOpen=false;glitchPulse=1.3;$('event-flash').classList.add('active');setTimeout(()=>$('event-flash').classList.remove('active'),220);controls.lock();showToast(id==='release'?'THE IRON IS FREE. THE BODIES ARE NOT.':'THE MACHINE KEEPS TURNING.');updateMissions();};$('dialogue-options').appendChild(b);});
+    [['CUT THE CHAINS','release'],['LEAVE EVERYTHING AS IT IS','keep']].forEach(([label,id])=>{const b=document.createElement('button');b.className='dialogue-option';b.textContent=label;b.onclick=()=>{storyFlags.add(id==='release'?'released':'complicit');storyFlags.add('carcasses-decided');if(id==='release'){carcasses[1].rotation.z=.8;carcasses[1].position.y=-.3;audio?.mechanicalEvent('hoist');fear=Math.min(1,fear+.2);scheduleCultSceneFates(2,'the chains','collapse');}else{carcasses[0].rotation.z=.42;storyFlags.add('leader-trust');scheduleCultSceneFates(2,'the silence of the hooks','vanish');}if('speechSynthesis'in window)window.speechSynthesis.cancel();$('subtitle-wrap').classList.remove('visible');dialogueOpen=false;glitchPulse=1.3;$('event-flash').classList.add('active');setTimeout(()=>$('event-flash').classList.remove('active'),220);requestMouseLock();showToast(id==='release'?'THE IRON IS FREE. THE BODIES ARE NOT.':'THE MACHINE KEEPS TURNING.');updateMissions();};$('dialogue-options').appendChild(b);});
   }});
   // A passage that returns the player to the same room from the wrong direction.
   const loopMarker=new THREE.Mesh(new THREE.BoxGeometry(.4,.12,.4),M.gold);loopMarker.position.set(-8,.1,6.8);z.group.add(loopMarker);
@@ -1876,7 +1876,7 @@ function openJournal() {
   if (!gameStarted || gameEnded || listeningPending || dialogueOpen) return;
   journalOpen = true; controls.unlock(); $('journal').classList.add('active'); renderJournal();
 }
-function closeJournal() { journalOpen = false; $('journal').classList.remove('active'); if (gameStarted && !gameEnded) controls.lock(); }
+function closeJournal() { journalOpen = false; $('journal').classList.remove('active'); if (gameStarted && !gameEnded) requestMouseLock(); }
 function renderJournal() {
   const list = $('journal-list'); list.innerHTML = '';
   if (!journal.length) { list.innerHTML = '<div class="empty-note">No clues recorded.<br><br>The house is not visible yet.</div>'; return; }
@@ -2124,11 +2124,13 @@ function updateTargets() {
 // Input and interface
 // -----------------------------------------------------------------------------
 function requestMouseLock() {
-  // Browsers with strict privacy/input policies may reject pointer lock. That must
-  // not disable keyboard movement; the game has a click-and-drag look fallback.
+  // Use the native promise-returning API so rejected pointer-lock requests are
+  // handled. Pointer lock must only be requested from a real user gesture.
   try {
-    const result = controls.lock();
-    if (result && typeof result.catch === 'function') result.catch(() => {});
+    const result = canvas.requestPointerLock?.();
+    if (result && typeof result.catch === 'function') result.catch(() => {
+      if (playerInputEnabled()) showToast('MOUSE LOOK PAUSED — CLICK THE SCENE TO RESUME. WASD WORKS.');
+    });
   } catch (_) {
     showToast('MOUSE FREE — WASD ACTIVE, DRAG TO LOOK.');
   }
@@ -2867,8 +2869,8 @@ function endCorradoTeaScene(){
   if(ines){ines.talkedOnce=true;ines.fate='present';ines.object.visible=true;}
   storyFlags.add('corrado-tea');storyFlags.add('corrado-dead');storyFlags.add('institution-survives');
   journal.push({id:'corrado-tea',title:'The cup at 03:17',description:'Ines poured tea for Corrado as he watched dust settle. The image of his fall arrived before its sound. She stayed. The house still had someone to open the door.',kind:'witness account',zone:'abattoir'});updateJournalCount();updateMissions();
-  storyScene=null;dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
-  showToast('THE FIRST IS GONE. THE HOUSE IS NOT EMPTY.');
+  storyScene=null;dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);
+  showToast('THE FIRST IS GONE. CLICK THE SCENE TO LOOK AROUND.');
 }
 function startDarioEavesdrop(){
   if(storyFlags.has('heard-dario-plan')||storyScene||gameEnded)return;
@@ -2884,8 +2886,8 @@ function startDarioEavesdrop(){
 function endDarioEavesdrop(){
   storyFlags.add('heard-dario-plan');storyFlags.add('complicit');
   journal.push({id:'dario-plan',title:'The Words Through the Wall',description:'You heard the instruction given to Dario. You could have opened the door. You did not. The silence was not an absence of action; it was the action you took.',kind:'witness account',zone:'home'});
-  updateJournalCount();updateMissions();storyScene=null;camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
-  flashFragment('collapse',135);showToast('YOU HEARD IT. YOU DID NOTHING.');
+  updateJournalCount();updateMissions();storyScene=null;camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);
+  flashFragment('collapse',135);showToast('YOU HEARD IT. CLICK THE SCENE TO LOOK AROUND.');
 }
 function storyLine(text) {
   const m = /^([^:]+):\s*/.exec(text);
@@ -2969,8 +2971,8 @@ function endPinoCombineScene(){
   storyFlags.add('pino-collapsed');storyFlags.add('complicit');
   if(!journal.some(entry=>entry.id==='pino-combine-death'))journal.push({id:'pino-combine-death',title:'The Field Kept Pino',description:'Pino ran toward the combine because he believed the road might still lead somewhere. The machine crossed the field without a driver. You watched it take him. The engine continued after there was no one left to follow.',kind:'witness account',zone:'road'});
   updateJournalCount();storyScene=null;dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');
-  camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
-  showToast('THE ENGINE HAS STOPPED. THE FIELD HAS NOT.');
+  camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);
+  showToast('THE ENGINE HAS STOPPED. CLICK THE SCENE TO LOOK AROUND.');
   updateMissions();
 }
 
@@ -3752,6 +3754,15 @@ window.addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
 });
 window.addEventListener('error', e => { const f = $('fatal'); f.textContent = `SYSTEM ERROR\n${e.message}\n${e.filename || ''}:${e.lineno || ''}`; f.classList.remove('hidden'); });
-window.addEventListener('unhandledrejection', e => { const f = $('fatal'); f.textContent = `SYSTEM ERROR\n${e.reason?.stack || e.reason}`; f.classList.remove('hidden'); });
+window.addEventListener('unhandledrejection', e => {
+   // Pointer-lock denial is an expected browser permission outcome, not a fatal
+   // game error. Keep keyboard and drag-look controls available.
+   if (e.reason?.name === 'NotAllowedError' && /requestPointerLock/i.test(e.reason?.message || '')) {
+     e.preventDefault();
+     if (playerInputEnabled()) showToast('MOUSE LOOK PAUSED — CLICK THE SCENE TO RESUME. WASD WORKS.');
+     return;
+   }
+   const f = $('fatal'); f.textContent = `SYSTEM ERROR\n${e.reason?.stack || e.reason}`; f.classList.remove('hidden');
+ });
 updateProgress();
 requestAnimationFrame(loop);
