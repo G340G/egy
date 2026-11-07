@@ -1485,24 +1485,19 @@ function buildAbattoir() {
   }
   const beamMat=new THREE.MeshBasicMaterial({color:0xbdbba7,transparent:true,opacity:.055,depthWrite:false,side:THREE.DoubleSide});
   const beam=new THREE.Mesh(new THREE.ConeGeometry(2.15,12.8,24,1,true),beamMat);beam.rotation.x=-Math.PI/2;beam.position.set(0,1.0,-6.4);projector.add(beam);storyRef.projectorBeam=beam;
-  // Thirteen seats. Seven in front, six behind: one place has been withheld.
-  const audienceSilhouette=mat(0x0d0f0d,.98);
+  // Thirteen empty seats: the audience is absent. Only the hanging forms remain.
   for(let row=0;row<2;row++){
     const count=row===0?7:6,zz=5.75+row*2.25;
     for(let i=0;i<count;i++){
       const x=(i-(count-1)/2)*1.55,sc=.82+(i%3)*.035;
       addWoodChair(z.group,x,zz,Math.PI,sc);
-      const audience=new THREE.Group();audience.position.set(x,.55,zz-.18);z.group.add(audience);
-      const coat=new THREE.Mesh(new THREE.CapsuleGeometry(.17,.46,4,7),audienceSilhouette);coat.position.y=.08;audience.add(coat);
-      const head=new THREE.Mesh(new THREE.SphereGeometry(.13,8,7),audienceSilhouette);head.position.y=.66;head.scale.set(.88,1.15,.82);audience.add(head);
-      for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.27,3,5),audienceSilhouette);arm.position.set(side*.20,.12,.02);audience.add(arm);}
     }
   }
   const screenMarker=new THREE.Mesh(new THREE.SphereGeometry(.14,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));screenMarker.position.set(0,.25,6.9);z.group.add(screenMarker);
   z.interactables.push({id:'collapse-screening',type:'event',object:screenMarker,point:screenMarker.position,radius:3.1,prompt:'[ E ] TAKE YOUR SEAT',run:startCollapseScreening});
   // The room contains manifestos that contradict each other, by design.
   // The cult leader is hidden at the far end; his face is turned away until spoken to.
-  const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI;if(leader.head)leader.head.material=headMaterial();storyRef.corrado=leader;leader.dialogue={line:'Man would rather will nothingness than not will. The room was not empty; we were taking up too much space.',choices:['Remove the tape.','Give me your place.'],replies:['There is no tape to remove. The machine turns without a reel.','The place is not mine. It is what remains when you give up your name.']};
+  const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI;if(leader.head)leader.head.material=headMaterial();leader.object.visible=false;storyRef.corrado=leader;leader.dialogue={line:'Man would rather will nothingness than not will. The room was not empty; we were taking up too much space.',choices:['Remove the tape.','Give me your place.'],replies:['There is no tape to remove. The machine turns without a reel.','The place is not mine. It is what remains when you give up your name.']};
   const eventMarker=new THREE.Mesh(new THREE.BoxGeometry(.34,.14,.34),M.clue);eventMarker.position.set(0,.12,1.7);z.group.add(eventMarker);
   z.interactables.push({id:'abattoir_ropes',type:'event',object:eventMarker,point:eventMarker.position,radius:3.0,prompt:'[ E ] CHOOSE WHAT TO DO WITH THE HOOKS',run:()=>{
     controls.unlock();dialogueOpen=true;$('speaker').textContent='THE ROOM / THE FOUR BODIES';$('subtitle').textContent='The chains are under tension. A voice comes from the floor: “If you free them, the room is left without witnesses. If you leave them, you become part of the inventory.” When you look again, one of the bodies has changed position.';speakVoice($('subtitle').textContent,'THE ROOM');$('subtitle-wrap').classList.add('visible');
@@ -2492,7 +2487,8 @@ function placeStalker(name) {
   const b = z.bounds, sp = z.spawn;
   const corners = [[b.minX + 1.2, b.minZ + 1.2], [b.maxX - 1.2, b.minZ + 1.2], [b.minX + 1.2, b.maxZ - 1.2], [b.maxX - 1.2, b.maxZ - 1.2]];
   corners.sort((p, q) => Math.hypot(q[0] - sp.x, q[1] - sp.z) - Math.hypot(p[0] - sp.x, p[1] - sp.z));
-  stalker.position.set(corners[0][0], 0, corners[0][1]);
+  if(name==='abattoir') stalker.position.set(6.2,0,-4.2);
+  else stalker.position.set(corners[0][0], 0, corners[0][1]);
   stalker.visible = true; stalkerZone = name; presenceWarned = false; presence = 0;
 }
 function updatePresence(dt, t) {
@@ -2502,9 +2498,15 @@ function updatePresence(dt, t) {
   const dx = stalker.position.x - p.x, dz = stalker.position.z - p.z, dist = Math.hypot(dx, dz) || .001;
   camera.getWorldDirection(camDir2);
   const fl = Math.hypot(camDir2.x, camDir2.z) || 1;
-  const watched = (camDir2.x * dx + camDir2.z * dz) / (fl * dist) > .55;
-  if (!watched && dist > 1.1) {
-    const step = Math.min(dist - 1, (.7 + presence * .9 + primoSpeedBonus()) * (watched ? 1 : 1.25) * dt);
+  const abattoirHunt = currentZone === 'abattoir';
+  const watched = (camDir2.x * dx + camDir2.z * dz) / (fl * dist) > (abattoirHunt ? .80 : .55);
+  // In the slaughterhouse, looking at The First slows him but never freezes him.
+  // When unseen he can cross the room faster than the player's sprint.
+  if ((!watched || abattoirHunt) && dist > 1.1) {
+    const speed = abattoirHunt
+      ? (2.35 + presence * 1.45 + primoSpeedBonus() * 1.7) * (watched ? .70 : 1.42)
+      : (.7 + presence * .9 + primoSpeedBonus()) * 1.25;
+    const step = Math.min(dist - 1, speed * dt);
     stalker.position.x -= dx / dist * step; stalker.position.z -= dz / dist * step;
   }
   stalker.rotation.y = Math.atan2(-dx, -dz);
@@ -2513,9 +2515,9 @@ function updatePresence(dt, t) {
   presence += (target - presence) * Math.min(1, dt * 1.6);
   if (presence > .5 && !nearFlag) { nearFlag = true; audio.stinger(1); glitchPulse = Math.max(glitchPulse, .8); }
   if (presence < .3) nearFlag = false;
-  if (dist < 2.9 && !presenceWarned) { presenceWarned = true; showToast('DO NOT TURN AROUND. HE IS NEAR. DO NOT WATCH HIM APPROACH.'); }
+  if (dist < (abattoirHunt ? 4.8 : 2.9) && !presenceWarned) { presenceWarned = true; showToast('DO NOT TURN AROUND. HE IS NEAR. DO NOT WATCH HIM APPROACH.'); }
   if (presence > .3) { beatTimer -= dt; if (beatTimer <= 0) { audio.knock(); beatTimer = 1.1 - presence * .6; } }
-  if (dist < 1.2) triggerDeath('THE FIRST HAS FOUND YOU');
+  if (dist < (abattoirHunt ? 1.65 : 1.2)) triggerDeath('THE FIRST HAS FOUND YOU');
 }
 // Missions: the first unfinished one whose prerequisites are met is shown in the objective panel.
 const MISSIONS=[
@@ -2945,7 +2947,7 @@ function startCorradoTeaScene(primo){
   const ines=cultRoster.find(n=>n.name==='Ines');
   if(!ines||ines.fate!=='present'){triggerDeath('THE TEA NEVER CAME','Ines was no longer there to pour it. The room had lost the one person who knew how to make an ending gentle.');return;}
   storyFlags.add('corrado-tea-started');keys.clear();controls.unlock();dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');
-  const z=zones.abattoir;const old=z.interactables.indexOf(primo);if(old>=0)z.interactables.splice(old,1);
+  const z=zones.abattoir;const old=z.interactables.indexOf(primo);if(old>=0)z.interactables.splice(old,1);primo.object.visible=true;
   if(ines.object.parent!==z.group)transferCultist(ines,z,-2.4,-5.35);else ines.object.position.set(-2.4,0,-5.35);
   ines.point=ines.object.position;ines.object.rotation.y=.72;primo.object.position.set(0,0,-7.15);primo.object.rotation.y=Math.PI;
   const cup=buildTeacup(z.group,-.78,.015,-5.95);storyRef.corradoCup=cup;
