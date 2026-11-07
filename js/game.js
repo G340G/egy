@@ -1485,12 +1485,18 @@ function buildAbattoir() {
   }
   const beamMat=new THREE.MeshBasicMaterial({color:0xbdbba7,transparent:true,opacity:.055,depthWrite:false,side:THREE.DoubleSide});
   const beam=new THREE.Mesh(new THREE.ConeGeometry(2.15,12.8,24,1,true),beamMat);beam.rotation.x=-Math.PI/2;beam.position.set(0,1.0,-6.4);projector.add(beam);storyRef.projectorBeam=beam;
-  for(let row=0;row<2;row++)for(const x of [-2.4,0,2.4]){
-    const zz=6.2+row*2.1;addWoodChair(z.group,x,zz,Math.PI,.88);
-    const audience=new THREE.Group();audience.position.set(x,.55,zz-.18);z.group.add(audience);
-    const silhouette=mat(0x0d0f0d,.98),coat=new THREE.Mesh(new THREE.CapsuleGeometry(.17,.46,4,7),silhouette);coat.position.y=.08;audience.add(coat);
-    const head=new THREE.Mesh(new THREE.SphereGeometry(.13,8,7),silhouette);head.position.y=.66;head.scale.set(.88,1.15,.82);audience.add(head);
-    for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.27,3,5),silhouette);arm.position.set(side*.20,.12,.02);audience.add(arm);}
+  // Thirteen seats. Seven in front, six behind: one place has been withheld.
+  const audienceSilhouette=mat(0x0d0f0d,.98);
+  for(let row=0;row<2;row++){
+    const count=row===0?7:6,zz=5.75+row*2.25;
+    for(let i=0;i<count;i++){
+      const x=(i-(count-1)/2)*1.55,sc=.82+(i%3)*.035;
+      addWoodChair(z.group,x,zz,Math.PI,sc);
+      const audience=new THREE.Group();audience.position.set(x,.55,zz-.18);z.group.add(audience);
+      const coat=new THREE.Mesh(new THREE.CapsuleGeometry(.17,.46,4,7),audienceSilhouette);coat.position.y=.08;audience.add(coat);
+      const head=new THREE.Mesh(new THREE.SphereGeometry(.13,8,7),audienceSilhouette);head.position.y=.66;head.scale.set(.88,1.15,.82);audience.add(head);
+      for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.27,3,5),audienceSilhouette);arm.position.set(side*.20,.12,.02);audience.add(arm);}
+    }
   }
   const screenMarker=new THREE.Mesh(new THREE.SphereGeometry(.14,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));screenMarker.position.set(0,.25,6.9);z.group.add(screenMarker);
   z.interactables.push({id:'collapse-screening',type:'event',object:screenMarker,point:screenMarker.position,radius:3.1,prompt:'[ E ] TAKE YOUR SEAT',run:startCollapseScreening});
@@ -3085,6 +3091,7 @@ function startConfession() {
     [4, 'Priest: The register from the winter of 1977 is still in the sacristy. Thirteen names, one recording, one heater nobody checked.'],
     [9, 'Priest: There is a fourteenth name. It was written in the same ink, the morning after the choir died. It is yours.'],
     [13, 'Priest: The date beside it is tomorrow. You agreed to come before you ever knocked on the door.'],
+    [15.1, 'Priest: Tobit was sent into blindness carrying a cure for another person. Your name is not a promise that you will heal anyone. It is a task you have not yet chosen.'],
     [16.5, 'Something is rising in the nave behind the grille. A hand, with no arm attached to it.'],
     [19.4, 'The hand sinks back into the dark. The grille closes.']] };
 }
