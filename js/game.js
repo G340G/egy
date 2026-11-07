@@ -473,7 +473,7 @@ function addCultist(zone, x, z, name, coat=0x34332f, variant=0, line='Non siamo 
   const npc=makeNPC(zone.group,x,z,name,coat,variant);
   npc.dialogue={line,choices,replies}; return registerCultist(npc);
 }
-function isProgressCriticalCultist(npc){const name=(npc?.name||'').toLowerCase();return name==='ines'||name==='ottavio';}
+function isProgressCriticalCultist(npc){const name=(npc?.name||'').toLowerCase();return ['ines','ottavio','pino'].includes(name);}
 function queueCultFate(source='a trace', preferred=null, mode=null) {
   const npc=preferred || [...cultRoster].reverse().find(n=>n.fate==='present');
   if(!npc || npc.fate!=='present') return null;
@@ -2404,12 +2404,15 @@ const MISSIONS=[
  {id:'widow',text:'Question the Widow in the ruined house about the 1977 recording.',when:()=>storyFlags.has('grave-revealed'),done:()=>storyFlags.has('talked-widow')},
  {id:'remo',text:'Speak with Father Remo. Ask why the cross has been turned around.',when:()=>collected.size>=2,done:()=>storyFlags.has('talked-remo')},
  {id:'candles',text:'Light all three altar candles. The flames are part of the way forward.',when:()=>collected.size>=2,done:()=>storyFlags.has('altar-lit')},
- {id:'cemetery',text:'The First says the missing name is buried in the cemetery beside the industries.',when:()=>storyFlags.has('cemetery-bait'),done:()=>storyFlags.has('cemetery-shot')}
+ {id:'cemetery',text:'The First says the missing name is buried in the cemetery beside the industries.',when:()=>storyFlags.has('cemetery-bait'),done:()=>storyFlags.has('cemetery-shot')},
+  {id:'pino-field',text:'Follow Pino into the wheat field. The combine is still running.',when:()=>storyFlags.has('pino-sent'),done:()=>storyFlags.has('pino-collapsed')}
 ];
 function currentMissionText(){
+ if(storyFlags.has('pino-sent')&&!storyFlags.has('pino-collapsed')&&currentZone==='road')return 'PINO WENT TOWARD THE WHEAT FIELD. FOLLOW THE ENGINE.';
  if(currentZone==='darkroom'&&!storyFlags.has('darkroom-cleared'))return 'SEARCH THE DARK ROOM — '+darkroomFindCount()+' / 6. Keep the beam moving.';
  if(storyFlags.has('altar-lit')&&!storyFlags.has('darkroom-cleared'))return currentZone==='cellar'?'THE SIDE DOOR IS OPEN. SEARCH THE DARK ROOM FOR THE SIX RECORDS.':'RETURN TO THE CELLAR. THE SIDE DOOR HAS OPENED.';
- if(storyFlags.has('darkroom-cleared')&&!storyFlags.has('listened-to-white'))return currentZone==='cellar'?'RETURN TO THE BLANK PLATTER. THE ROOM HAS BEEN RECORDED.':'THE BLANK PLATTER IS WAITING IN THE CELLAR.';
+ if(storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))return currentZone==='abattoir'?'SPEAK WITH THE FIRST AGAIN. ASK HIM ABOUT THE SOUND HE REFUSED TO HEAR.':'RETURN TO THE SLAUGHTERHOUSE. THE FIRST IS WAITING BESIDE THE HOOKS.';
+  if(storyFlags.has('corrado-tea')&&!storyFlags.has('listened-to-white'))return currentZone==='cellar'?'RETURN TO THE BLANK PLATTER. THE ROOM HAS BEEN RECORDED.':'THE BLANK PLATTER IS WAITING IN THE CELLAR.';
  if(currentZone==='home'&&!storyFlags.has('talked-ines'))return 'Speak with Ines before examining the Seating List.';
  if(currentZone==='home'&&!storyFlags.has('talked-ottavio'))return 'Speak with Ottavio before examining the Tuning Fork.';
  if(currentZone==='church'&&!storyFlags.has('talked-remo'))return 'Speak with Father Remo before examining the Mass Register.';
@@ -2897,6 +2900,33 @@ function updateStoryScene(dt, t) {
   const s = storyScene; s.t += dt;
   while (s.i < s.lines.length && s.t >= s.lines[s.i][0]) { storyLine(s.lines[s.i][1]); s.i++; }
   if (s.type === 'hold') { if (s.t >= s.dur) storyScene = null; }
+  else if(s.type==='pino-combine'){
+    const pino=storyRef.pino,machine=storyRef.combine;
+    camera.position.set(-37.2,6.8,-27.8);camera.lookAt(-51,1.0,-39.5);
+    if(pino&&pino.fate!=='dead'){
+      pino.object.position.x=-49-Math.min(8.2,s.t*1.02);
+      pino.object.position.z=-34-Math.sin(s.t*.55)*.55;
+      pino.object.rotation.y=-Math.PI/2;pino.object.rotation.z=Math.sin(s.t*4)*.08;pino.walking=true;
+    }
+    if(machine){
+      machine.position.x=-42-Math.max(0,s.t-1.8)*1.55;machine.position.z=-35-Math.max(0,s.t-1.8)*.36;machine.rotation.y=-Math.PI/2;
+      if(machine.userData.reel)machine.userData.reel.rotation.x+=dt*2.4;
+      if(machine.userData.wheels)machine.userData.wheels.forEach(w=>{w.rotation.z+=dt*4.8;});
+    }
+    if(s.t>=8.0&&!s.collapse){s.collapse=true;if(pino){pino.fate='dead';pino.walking=false;pino.object.visible=false;}flashFragment('collapse',190);glitchPulse=Math.max(glitchPulse,1.2);}
+    if(s.t>=11.3&&!s.sound){s.sound=true;audio?.mechanicalNoise(.34,360,1.1,.18,0);audio?.mechanicalTone(84,32,1.8,'sawtooth',.09,0);audio?.killSting();}
+    if(s.t>=s.dur)endPinoCombineScene();
+  }
+  else if(s.type==='corrado-tea'){
+    const leader=s.leader,ines=s.ines,k=THREE.MathUtils.smoothstep(s.t,0,s.dur);
+    camera.position.set(-1.2+.22*Math.sin(s.t*.35),1.8,-3.25-.65*k);camera.lookAt(-.2,1.28,-6.35);
+    if(ines){ines.object.rotation.y=.68+Math.sin(s.t*1.2)*.018;ines.object.position.x=-2.4+THREE.MathUtils.smoothstep(s.t,1,4)*1.2;}
+    if(leader&&s.t<9.9){leader.object.rotation.y=Math.PI+Math.sin(s.t*.42)*.035;leader.object.rotation.x=Math.sin(s.t*.8)*.018;}
+    if(leader&&s.t>=9.9&&!s.collapsed){s.collapsed=true;leader.object.rotation.x=1.38;leader.object.rotation.z=.12;leader.object.position.y=-.22;flashFragment('tea',185);glitchPulse=Math.max(glitchPulse,1.45);}
+    if(leader&&s.t>=12.1)leader.object.visible=false;
+    if(s.t>=14.1&&!s.sound){s.sound=true;audio?.mechanicalNoise(.22,2400,6,.12,.15);audio?.mechanicalTone(96,34,1.2,'sawtooth',.08,-.1);audio?.killSting();}
+    if(s.t>=s.dur)endCorradoTeaScene();
+  }
   else if (s.type === 'finale') { updateFinale(s, dt); } else if (s.type === 'intro') {
     const k = THREE.MathUtils.smoothstep(s.t, 0, s.dur);
     camera.position.set(Math.sin(s.t * .8) * .05, 1.62 + Math.sin(s.t * 2.6) * .025, THREE.MathUtils.lerp(64, 27, k));
