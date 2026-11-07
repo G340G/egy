@@ -1437,7 +1437,7 @@ function buildAbattoir() {
     (storyRef.projectorReels||(storyRef.projectorReels=[])).push(reel);
   }
   const beamMat=new THREE.MeshBasicMaterial({color:0xbdbba7,transparent:true,opacity:.055,depthWrite:false,side:THREE.DoubleSide});
-  const beam=new THREE.Mesh(new THREE.ConeGeometry(2.15,8.0,24,1,true),beamMat);beam.rotation.x=-Math.PI/2;beam.position.set(0,1.0,-.7);projector.add(beam);storyRef.projectorBeam=beam;
+  const beam=new THREE.Mesh(new THREE.ConeGeometry(2.15,12.8,24,1,true),beamMat);beam.rotation.x=-Math.PI/2;beam.position.set(0,1.0,-6.4);projector.add(beam);storyRef.projectorBeam=beam;
   for(let row=0;row<2;row++)for(const x of [-2.4,0,2.4]){
     const zz=6.2+row*2.1;addWoodChair(z.group,x,zz,Math.PI,.88);
     const audience=new THREE.Group();audience.position.set(x,.55,zz-.18);z.group.add(audience);
