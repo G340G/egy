@@ -1641,41 +1641,10 @@ if (abattoirEntrance) abattoirEntrance.requiredClues = 7;
 const cellarDoor = zones.home.interactables.find(i => i.destination === 'cellar');
 if (cellarDoor) cellarDoor.requiredClues = clueCount;
 
-// Keep document progress across refreshes. The previous build did not save
-// these eight traces, so ?continue=7 provides a one-time recovery checkpoint
-// for a player who was already stuck at seven.
+// All collectibles and progress are per-playthrough. Old clue saves are
+// discarded on load; a fresh visit always begins with every clue and relic present.
 const EVIDENCE_SAVE_KEY = 'epistassi-evidence-v1';
-function persistEvidenceProgress() {
-  try { localStorage.setItem(EVIDENCE_SAVE_KEY, JSON.stringify([...collected])); } catch (_) {}
-}
-function restoreEvidenceProgress() {
-  const params = new URLSearchParams(location.search);
-  if (params.get('reset') === '1') {
-    try { localStorage.removeItem(EVIDENCE_SAVE_KEY); } catch (_) {}
-  }
-  let ids = [];
-  if (params.get('continue') === '7') {
-    ids = ['clipping', 'list', 'fork', 'beam', 'mass', 'photo', 'voicemail'];
-  } else {
-    try {
-      const saved = JSON.parse(localStorage.getItem(EVIDENCE_SAVE_KEY) || '[]');
-      if (Array.isArray(saved)) ids = saved.filter(id => typeof id === 'string');
-    } catch (_) {}
-  }
-  const wanted = new Set(ids);
-  for (const z of Object.values(zones)) {
-    for (const item of [...z.interactables]) {
-      if (item.type !== 'clue' || !wanted.has(item.id) || collected.has(item.id)) continue;
-      collected.add(item.id);
-      journal.push({ id: item.id, title: item.title, description: item.description, kind: item.kind || 'documento', zone: z.name });
-      item.object.parent?.remove(item.object);
-      const index = z.interactables.indexOf(item);
-      if (index >= 0) z.interactables.splice(index, 1);
-    }
-  }
-  if (collected.size) persistEvidenceProgress();
-}
-restoreEvidenceProgress();
+clearSavedEvidence();
 
 function enterZone(name, spawn) {
   Object.values(zones).forEach(v => { v.group.visible = false; });
@@ -1903,7 +1872,6 @@ function collectClue(item) {
   if (item.requiresFlag && !storyFlags.has(item.requiresFlag)) { showToast(item.blockedHint || 'Speak with the relevant person first.'); return; }
   collected.add(item.id);
   journal.push({ id: item.id, title: item.title, description: item.description, kind: item.kind || 'documento', zone: currentZone });
-  persistEvidenceProgress();
   updateJournalCount();
   zone.group.remove(item.object);
   zone.interactables.splice(zone.interactables.indexOf(item), 1);
@@ -2054,6 +2022,7 @@ function revealEndingChoices(){
 }
 
 function resolveEnding(choice) {
+  clearSavedEvidence();
   const choices={
     testimony:{title:'The Names Took Root',copy:'You spoke the thirteen names as people call to one another from a window. In the forest, thirteen leaves stopped against the wind. They did not return. But for the first time they were no longer only erased shapes. The fog let the light pass without dissolving them.',small:'ENDING IV / TESTIMONY',voice:'Aurelio. Ines. Dario. Sergio. You are not the record. You were here.'},
     fill:{title:'The Place Learned Your Name',copy:'You let The First call you by name, and you stopped correcting him. The figure in the forest filled its coat with your absence. The house remains lit: someone must open the door for the next arrival.',small:'ENDING I / FILLING',voice:'They did not take you away. They convinced you to leave your place.'},
@@ -2224,6 +2193,7 @@ function requestMouseLock() {
 }
 function startGame() {
   if (gameStarted) return;
+  clearSavedEvidence();
   gameStarted = true;
   keys.clear();
   $('start-screen').classList.remove('active');
