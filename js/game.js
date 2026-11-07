@@ -1378,15 +1378,88 @@ function buildCellar() {
   // A human outline that could be a coat on a hook.
   const hanging = makeNPC(z.group, -7.0, -4.9, 'Il cappotto', 0x141614, 1); hanging.object.scale.set(.72, 1.12, .72); hanging.prompt = '[ E ] ESAMINA — IL CAPOTTO';
   hanging.dialogue = { line: 'Le maniche sono ancora calde. Non c’è nessuno dentro.', choices: ['Chi lo ha lasciato?', 'Non toccarlo.'], replies: ['La persona che indossa i vestiti degli altri quando ha freddo.', 'È già stato toccato. Dal lato che non vedi.'] };
-  addDoor(z.group, 0, 7.95, 'le scale', 'home', [7.5, 0, -5.2]);
-  const turntableEntry = { id: 'listen', type: 'listen', object: disc, point: disc.position, radius: 3.0, prompt: '[ E ] ASCOLTA IL BIANCO', title: 'The White' };
+  addDoor(z.group, 0, 7.95, 'the stairs', 'home', [7.5, 0, -5.2]);
+  const darkDoor=addDoor(z.group,8.25,0,'the dark room','darkroom',[0,0,9.3],true,{rotationY:Math.PI/2,style:'hatch'});darkDoor.requiresFlag='altar-lit';darkDoor.blockedHint='The three altar candles must be lit before the side door will open.';darkDoor.prompt='[ E ] ENTER THE DARK ROOM';
+  const turntableEntry = { id: 'listen', type: 'listen', object: disc, point: disc.position, radius: 3.0, prompt: '[ E ] LISTEN TO THE WHITE', title: 'The White', requiresFlag:'darkroom-cleared', blockedHint:'The room has not been searched. Find what the recording contains before you listen.' };
   z.interactables.push(turntableEntry);
   z.mist = addFog(z.group, 18, 22, 0x8d8c7d, 92);
   z.solids.push({ minX: -9, maxX: -8.7, minZ: -8, maxZ: 8 }, { minX: 8.7, maxX: 9, minZ: -8, maxZ: 8 }, { minX: -9, maxX: -4.5, minZ: -8.2, maxZ: -8 }, { minX: 4.5, maxX: 9, minZ: -8.2, maxZ: -8 }, { minX: -9, maxX: -4.6, minZ: 7.7, maxZ: 8 }, { minX: 4.6, maxX: 9, minZ: 7.7, maxZ: 8 });
   return z;
 }
 
-buildRoad(); buildHome(); buildChurch(); buildRuin(); buildAbattoir(); buildCellar(); buildStoryExtras();
+function buildDarkroom(){
+  const z=newZone('darkroom',0x030404,.115,{minX:-10,maxX:10,minZ:-12,maxZ:12},[0,0,9.2]);
+  z.ambient.intensity=.055;z.moon.intensity=.035;
+  const floorMat=mat(0x171714,.98,{map:TEX.concrete,bumpScale:.16});addBox(z.group,0,-.14,0,20,.28,24,floorMat);
+  const wallMat=mat(0x262723,1,{map:TEX.plaster,bumpScale:.17});
+  addBox(z.group,-10,2,0,.32,4,24,wallMat);addBox(z.group,10,2,0,.32,4,24,wallMat);
+  addBox(z.group,0,2,-12,20,4,.32,wallMat);
+  addBox(z.group,-5.9,2,12,8.2,4,.32,wallMat);addBox(z.group,5.9,2,12,8.2,4,.32,wallMat);
+  // The room is a furniture maze, not a corridor kit: tables, chairs and papers make the route.
+  const partitions=[
+    [-5.4,5.2,.24,9.0],[-1.0,1.7,.24,7.8],[4.7,4.0,.24,8.4],
+    [0,-3.1,8.8,.24],[-5.9,-7.3,7.8,.24],[5.6,-8.1,8.5,.24],
+    [-7.4,-1.7,.24,5.3],[7.5,1.5,.24,5.6]
+  ];
+  for(const [x,zp,w,d] of partitions){
+    const h=3.3,seg=addBox(z.group,x,h/2,zp,w,h,d,wallMat);
+    z.solids.push({minX:x-w/2,maxX:x+w/2,minZ:zp-d/2,maxZ:zp+d/2});
+    // Small flaked plaster and water marks give the partitions a lived-in, damp surface.
+    for(let k=0;k<5;k++){const stain=new THREE.Mesh(new THREE.SphereGeometry(.18+Math.random()*.18,7,6),mat(k%2?0x30342d:0x403c32,1,{map:TEX.plaster}));stain.scale.set(1.4,.55,.10);stain.position.set(x+(Math.random()-.5)*w, .45+Math.random()*2.2, zp+(Math.random()-.5)*d);z.group.add(stain);}
+  }
+  // The chair backs and table edges hide the next turn until the lamp reaches them.
+  const chairSpots=[[-7,8.0,.1],[-3.2,6.3,1.1],[1.8,7.0,-.7],[6.5,7.2,2.3],[-7,1.7,-1.2],[-3.2,-1.1,2.7],[2.2,-.8,-1.5],[7,-3.6,2.2],[-6.2,-8.4,.3],[0,-8.5,2.1],[5.8,-8.4,-1.1],[2.6,3.5,1.1]];
+  chairSpots.forEach(([x,zp,r],i)=>{const ch=addWoodChair(z.group,x,zp,r,.88+(i%3)*.05);ch.userData.mazeChair=true;});
+  addWoodTable(z.group,-7.1,4.0,2.15,.92,.74,41);
+  addWoodTable(z.group,-1.5,-1.8,2.0,1.0,.72,43);
+  addWoodTable(z.group,5.8,2.7,2.1,1.0,.74,47);
+  addWoodTable(z.group,1.5,-8.7,2.35,1.0,.76,53);
+  // A single dying utility lamp is wired to nothing. It does not light the maze.
+  const deadLamp=new THREE.Group();deadLamp.position.set(0,3.2,-1);z.group.add(deadLamp);
+  const shade=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(.18,.04),new THREE.Vector2(.31,.18),new THREE.Vector2(.28,.22)],18),M.rust);shade.position.y=.05;deadLamp.add(shade);
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.018,.02,.58,8),M.darkWood);stem.position.y=-.28;deadLamp.add(stem);
+  const deadBulb=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),mat(0x171614,.9));deadBulb.position.y=-.62;deadLamp.add(deadBulb);
+  // Six real objects form the evidence chain. The beam reveals their surfaces; the journal preserves what it reveals.
+  const heater=buildGasHeater(z.group,-7.4,0,8.8,.92);
+  const heaterPoint=new THREE.Vector3(-7.4,1.15,8.8);
+  addLoreProp(z,'dark-heater','The radiant heater','A portable LPG radiant heater: perforated steel hood, ceramic burner panels, a lower guard and four small castors. The gas hose is still attached. A maintenance tag reads: FLUE / AIR INTAKE — BLOCKED. The report never names carbon monoxide. It records a room that was not ventilated, thirteen bodies and a clock stopped at 03:17.','dark-heater',heater,heaterPoint,'[ E ] EXAMINE THE HEATER');
+  const plugCase=buildEarplugCase(z.group,6.1,.78,3.1);
+  addLoreProp(z,'dark-earplugs','The earplug case','A small brass case contains two soft wax plugs. The lid is engraved with a single initial: C. A note inside says: “Wear them before the first revolution. Stay to watch.” Corrado watched every collapse and never had to hear one.','dark-earplugs',plugCase,new THREE.Vector3(6.1,1.05,3.1),'[ E ] OPEN THE EARPLUG CASE');
+  const book=buildPaperback(z.group,-1.7,.77,-1.8);
+  addLoreProp(z,'dark-book','The paperback','A battered Nietzsche paperback. It is almost entirely underlined. The margins contain only durations: 4.2 seconds, 7.1 seconds, 11 seconds. “Man would rather will nothingness than not will.” The sentence is copied as an instruction. No sentence in the book tells anyone to push.','dark-book',book,new THREE.Vector3(-1.7,1.0,-1.8),'[ E ] READ THE PAPERBACK');
+  const recorder=buildReelRecorder(z.group,-1.8,0,-8.6);
+  addLoreProp(z,'dark-reel','The empty transport','Two reels turn. No tape is threaded through the guides. The red RECORD lamp is on; both VU needles remain below zero. The heads touch nothing. There is no music to recover — only the room tone around a machine that continues to turn.','dark-reel',recorder,new THREE.Vector3(-1.8,1.1,-8.6),'[ E ] EXAMINE THE REEL DECK');
+  const reportTable=addWoodTable(z.group,7.1,7.1,2.3,1.05,.76,67);
+  const report=new THREE.Group();report.position.set(7.0,.82,7.1);z.group.add(report);
+  const folder=roundedHousing(.54,.035,.38,.035,mat(0x6b5942,.98),.01);folder.position.y=.015;report.add(folder);
+  const sheet=new THREE.Mesh(new THREE.PlaneGeometry(.48,.32),new THREE.MeshBasicMaterial({map:makeLabelTexture('WINTER 1977\\n13 / 03:17\\nCAUSE: UNDETERMINED',512,320),side:THREE.DoubleSide}));sheet.rotation.x=-Math.PI/2;sheet.position.y=.04;report.add(sheet);
+  addLoreProp(z,'dark-report','The coroner’s copy','A carbon copy from the winter of 1977. Thirteen names, a church, a room heater and thirteen times written as 03:17. “Cause undetermined” is stamped twice. A handwritten note adds: “the window latches were sealed from the inside.” It is evidence, not a verdict.','dark-report',report,new THREE.Vector3(7.0,1.0,7.1),'[ E ] READ THE CARBON COPY');
+  const glyphWall=new THREE.Group();glyphWall.position.set(9.72,0,-6.0);glyphWall.rotation.y=-Math.PI/2;z.group.add(glyphWall);
+  const glyphMat=mat(0x968b70,.95,{emissive:0x17120b,emissiveIntensity:.08});
+  const glyphPaths=[
+    [[0,0],[0,.55],[.22,.72]],[[0,.1],[.22,.48],[.42,.1]],[[.1,0],[.1,.72],[.38,.72]],
+    [[0,0],[.35,.7],[.7,0]],[[0,.2],[.35,.2],[.35,.7]],[[.1,0],[.42,.32],[.1,.7]],
+    [[0,0],[.3,.0],[.3,.7],[0,.7]],[[0,.7],[.2,.35],[.42,.7]],[[0,.35],[.42,.35],[.2,0],[.2,.7]],
+    [[0,0],[.42,.7]],[[0,.7],[.42,0],[.42,.7]],[[.2,0],[.2,.7],[0,.35],[.42,.35]],
+    [[0,.0],[.42,.7],[.42,0]],[[.42,.7],[.1,.35],[.42,0]]
+  ];
+  glyphPaths.forEach((path,i)=>{const glyph=new THREE.Group();glyph.position.set(-4.9+i*.72,1.0,0);path.slice(1).forEach((p,j)=>tubeBetween(glyph,[path[j][0]-.2,path[j][1]-.35,.018],[p[0]-.2,p[1]-.35,.018],.018,glyphMat,6));glyphWall.add(glyph);});
+  for(let i=0;i<13;i++){const dot=new THREE.Mesh(new THREE.SphereGeometry(.026,6,5),M.gold);dot.position.set(-4.9+i*.72,.74,.02);glyphWall.add(dot);}
+  const reversed=new THREE.Group();reversed.position.set(5.0,1.0,.025);reversed.scale.x=-1;reversed.add(new THREE.Mesh(new THREE.TorusGeometry(.18,.018,5,16),glyphMat));glyphWall.add(reversed);
+  addLoreProp(z,'dark-script','The fourteen marks','Fourteen signs have been scratched into the plaster. They resemble an alphabet but do not match any hand you know. Thirteen face the same way. The last is reversed, like a station turned back toward the person who is meant to occupy it. There is no translation. There is only a place left open.','dark-script',glyphWall,new THREE.Vector3(8.9,1.25,-6.0),'[ E ] STUDY THE FOURTEENTH MARK');
+  const returnDoor=addDoor(z.group,0,11.78,'the cellar','cellar',[0,0,5.4],true,{style:'hatch'});returnDoor.requiresFlag='darkroom-cleared';returnDoor.blockedHint='The room is not finished with you. Find all six pieces of evidence first.';
+  returnDoor.prompt='[ E ] RETURN TO THE CELLAR';
+  z.mist=addFog(z.group,18,26,0x151613,156);z.fog=new THREE.FogExp2(z.fogColor,z.density);
+  z.solids.push({minX:-10,maxX:-9.7,minZ:-12,maxZ:12},{minX:9.7,maxX:10,minZ:-12,maxZ:12},{minX:-10,maxX:-1.4,minZ:11.7,maxZ:12},{minX:1.4,maxX:10,minZ:11.7,maxZ:12},{minX:-10,maxX:10,minZ:-12.2,maxZ:-12});
+  // Corrado is a moving absence. The light catches him; the dark lets him move.
+  const hunter=makeNPC(z.group,7.7,-9.5,'Corrado',0x171614,1);
+  const idx=z.interactables.findIndex(item=>item===hunter);if(idx>=0)z.interactables.splice(idx,1);
+  hunter.object.visible=false;hunter.object.scale.set(.92,1.04,.86);hunter.object.rotation.y=Math.PI;
+  hunter.dialogue={line:'You found the room. It was waiting before you were born.',choices:['What is on the tape?','Why are you following me?'],replies:['The same thing that was here before the tape: a room.','I am not following you. I am keeping the distance at which you can still choose.']};
+  storyRef.darkroomHunter=hunter;darkroomHunt={active:false,elapsed:0,reappear:0,lastFlash:0};
+  return z;
+}
+buildRoad(); buildHome(); buildChurch(); buildRuin(); buildAbattoir(); buildCellar(); buildDarkroom(); buildStoryExtras();
 
 // The cellar is deliberately inaccessible until all eight traces have been read.
 const abattoirEntrance = zones.road.interactables.find(i => i.destination === 'abattoir');
@@ -1594,6 +1667,31 @@ audio = new AmbientSound();
 function showToast(text) {
   const el = $('toast'); el.textContent = text; el.classList.add('visible'); clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('visible'), 2600);
+}
+function addLoreProp(z,id,title,description,flag,object,point,prompt){
+  const entry={id,type:'story',object,point:point.clone?point:object.position.clone(),radius:2.8,prompt,title,run:()=>{
+    if(storyFlags.has(flag)){showToast('THE OBJECT HAS ALREADY BEEN RECORDED.');return;}
+    storyFlags.add(flag);journal.push({id,title,description,kind:'recovered document',zone:z.name});updateJournalCount();
+    $('speaker').textContent=title.toUpperCase();$('subtitle').textContent=description;$('subtitle-wrap').classList.add('visible');
+    clearTimeout(narrationTimer);narrationTimer=setTimeout(()=>{if(!dialogueOpen)$('subtitle-wrap').classList.remove('visible');},7600);
+    flashFragment(flag.replace('dark-',''),140);audio?.mechanicalEvent('scrape');glitchPulse=Math.max(glitchPulse,.8);
+    showToast('EVIDENCE RECOVERED // '+title.toUpperCase());updateMissions();completeDarkroomIfReady();
+  }};
+  z.interactables.push(entry);return entry;
+}
+function darkroomFindCount(){return ['dark-heater','dark-earplugs','dark-book','dark-reel','dark-report','dark-script'].filter(f=>storyFlags.has(f)).length;}
+function completeDarkroomIfReady(){
+  if(darkroomFindCount()<6||storyFlags.has('darkroom-cleared'))return;
+  storyFlags.add('darkroom-cleared');darkroomHunt.active=false;
+  if(storyRef.darkroomHunter)storyRef.darkroomHunter.object.visible=false;
+  flashFragment('room-tone',220);audio?.mechanicalTone(67,34,3.2,'sine',.07,0);
+  showToast('THE ROOM HAS BEEN RECORDED. THE DOOR IS OPEN.');
+  startMonologue([
+    'Tobia: The reels moved without tape. The meters did not rise. The room was the recording.',
+    'Voice: No one can prove that the room was empty. The dead are not here to correct us.',
+    'Tobia: I had been listening for an album. I had only been listening to the place that waited for it.'
+  ],17);
+  updateMissions();
 }
 function updateProgress() {
   const n = collected.size; $('evidence-count').textContent = `${n} / ${clueCount} TRACCE`;
