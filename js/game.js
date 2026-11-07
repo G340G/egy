@@ -2407,17 +2407,9 @@ function updatePresence(dt, t) {
   if (!active) { presence = Math.max(0, presence - dt * .8); return; }
   const p = playerAnchor.position;
   const dx = stalker.position.x - p.x, dz = stalker.position.z - p.z, dist = Math.hypot(dx, dz) || .001;
-  camera.getWorldDirection(camDir2);
-  const fl = Math.hypot(camDir2.x, camDir2.z) || 1;
-  const watched = (camDir2.x * dx + camDir2.z * dz) / (fl * dist) > .55;
-  // The First follows the same rule in every room: he advances only while unseen.
-  if (!watched && dist > 1.1) {
-    const speed = (.7 + presence * .9 + primoSpeedBonus()) * 1.25;
-    const step = Math.min(dist - 1, speed * dt);
-    stalker.position.x -= dx / dist * step; stalker.position.z -= dz / dist * step;
-  }
-  stalker.rotation.y = Math.atan2(-dx, -dz);
-  stalker.rotation.z = Math.sin(t * .0027) * .04;
+  // Static-enemy test mode: The First remains fixed at his room-entry position.
+  // Keep the proximity atmosphere, warning, and contact check without pursuit.
+  stalker.rotation.z = 0;
   const target = THREE.MathUtils.clamp(1 - (dist - 1.2) / 8, 0, 1);
   presence += (target - presence) * Math.min(1, dt * 1.6);
   if (presence > .5 && !nearFlag) { nearFlag = true; audio.stinger(1); glitchPulse = Math.max(glitchPulse, .8); }
@@ -3128,23 +3120,12 @@ function endCarScene() {
   showToast('RUN. THE LAMP IS THE STARTING POINT.');
   fear = Math.min(1, fear + .2); glitchPulse = Math.max(glitchPulse, .8);
 }
-// The chase: he hesitates when you watch him, lunges when you turn away, and sometimes lies about the way back.
+// Static-enemy test mode: the forest pursuer stays at its scene-entry position.
 function updateChase(dt, t) {
   if (currentZone !== 'forest') { chaseState = null; storyRef.chaser.visible = false; return; }
-  const c = chaseState, ch = storyRef.chaser, p = playerAnchor.position;
-  c.t += dt; c.next -= dt;
-  if (c.next <= 0) {
-    c.lunge = Math.random() < .35 ? 1.2 : 0; c.next = 2.5 + Math.random() * 3;
-    if (Math.random() < .35) storyLine(['The First: Come back. The way is shorter from here.', 'The First: You are walking away from the one warm place in the forest.', 'The First: Listen. The forest is listening for your breath.'][(Math.random() * 3) | 0]);
-  }
+  const ch = storyRef.chaser, p = playerAnchor.position;
   const dx = p.x - ch.position.x, dz = p.z - ch.position.z, d = Math.hypot(dx, dz) || .001;
-  camera.getWorldDirection(camDir2);
-  const fl = Math.hypot(camDir2.x, camDir2.z) || 1;
-  const watched = (camDir2.x * -dx + camDir2.z * -dz) / (fl * d) > .6 && d < 8;
-  if (c.lunge > 0) c.lunge -= dt;
-  const speed = c.lunge > 0 ? 4.4 + primoSpeedBonus() : (watched ? 0 : (2.2 + Math.sin(t * .7) * .5 + primoSpeedBonus()) * 1.2);
-  if (d > 1.2 && speed > 0) { const step = Math.min(d - 1.1, speed * dt); ch.position.x += dx / d * step; ch.position.z += dz / d * step; }
-  ch.rotation.y = Math.atan2(dx, dz); ch.rotation.z = Math.sin(t * .004) * .05;
+  // Retain contact danger, but never move or rotate the figure toward the player.
   if (d < 1.3) { chaseState = null; triggerDeath('THE FOREST KEPT YOU'); return; }
   if (Math.hypot(p.x, p.z) < 2.6) escapeForest();
 }
@@ -3375,11 +3356,9 @@ function applyChoiceEffect(key,index,npc=null){
     updateJournalCount(); showToast('A KEY TO THE EAST ROOM.');
   }
   else if (effect === 'closer') {
-    if (stalker && stalker.visible && stalkerZone === currentZone) {
-      const p = playerAnchor.position, dx = p.x - stalker.position.x, dz = p.z - stalker.position.z, d = Math.hypot(dx, dz) || 1;
-      stalker.position.x += dx / d * Math.min(4, d - 1); stalker.position.z += dz / d * Math.min(4, d - 1);
-    } else storyFlags.add('primo-closer');
-    showToast('SOMETHING HAS COME CLOSER.');
+    // Preserve the story beat without moving the stationary enemy.
+    storyFlags.add('primo-closer');
+    showToast('SOMETHING IS STILL WAITING.');
   }
   else if (effect === 'jumpscare') jumpscare();
   else if (effect === 'trip') trip();
@@ -3632,17 +3611,9 @@ function laugh() {
     o.connect(bp); bp.connect(g); g.connect(audio.master); o.start(t); o.stop(t + .16);
   }
 }
-// In the cellar, the enemy never stays put: he jumps to a new place every few seconds, and laughs.
-let hunt = { timer: 4 };
+// Static-enemy test mode: the cellar apparition no longer relocates or laughs from new positions.
 function updateCellarHunt(dt, t) {
-  if (currentZone !== 'cellar' || !stalker || !stalker.visible || stalkerZone !== 'cellar' || storyScene || dialogueOpen) return;
-  hunt.timer -= dt; if (hunt.timer > 0) return;
-  hunt.timer = Math.max(3, 8 - escTier * .7) + Math.random() * 3;
-  const p = playerAnchor.position; let x = 0, z = 0, tries = 0;
-  do { x = -7 + Math.random() * 14; z = -6 + Math.random() * 12; tries++; } while (Math.hypot(x - p.x, z - p.z) < 4 && tries < 20);
-  stalker.position.set(x, 0, z);
-  laugh();
-  storyLine('The First: [laughs] You looked the wrong way again.');
+  // Intentionally stationary in every room.
 }
 // Cinematic bars during scenes; they slide in and out.
 const LB = { top: document.createElement('div'), bottom: document.createElement('div') };
