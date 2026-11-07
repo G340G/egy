@@ -1417,6 +1417,22 @@ function addHangingCarcass(group,x,z,phase=0) {
   for(let i=0;i<3;i++){const strip=new THREE.Mesh(new THREE.PlaneGeometry(.22,.86+Math.random()*.42),new THREE.MeshStandardMaterial({color:[0x513a34,0x755d51,0x302b27][i],transparent:true,opacity:.62,side:THREE.DoubleSide,roughness:1}));strip.position.set((i-1)*.31,1.35,.42);strip.rotation.z=(i-1)*.14;rig.add(strip);}
   rig.userData.hangPhase=phase;rig.userData.hanging=true;return rig;
 }
+function makeCollapseFilmTexture(){
+  const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
+  const bg=g.createLinearGradient(0,0,0,512);bg.addColorStop(0,'#c7bea7');bg.addColorStop(.42,'#968d7b');bg.addColorStop(1,'#554f45');g.fillStyle=bg;g.fillRect(0,0,1024,512);
+  const vignette=g.createRadialGradient(512,245,30,512,245,620);vignette.addColorStop(0,'rgba(245,239,218,.12)');vignette.addColorStop(1,'rgba(8,9,8,.78)');g.fillStyle=vignette;g.fillRect(0,0,1024,512);
+  g.fillStyle='rgba(15,16,14,.8)';g.fillRect(60,365,904,147);
+  g.strokeStyle='rgba(35,35,30,.46)';g.lineWidth=8;g.beginPath();g.moveTo(70,350);g.lineTo(954,350);g.stroke();
+  for(let i=0;i<13;i++){const x=92+i*70,y=346+(i%3)*4;g.fillStyle='rgba(15,17,15,.82)';g.beginPath();g.ellipse(x,y-88,19,25,(i%2?-.1:.08),0,Math.PI*2);g.fill();g.fillRect(x-20,y-64,40,72);g.fillRect(x-28,y-4,56,62);}
+  g.save();g.translate(515,330);g.rotate(-.48);g.fillStyle='#171915';g.beginPath();g.ellipse(0,-142,31,39,-.12,0,Math.PI*2);g.fill();
+  g.lineCap='round';g.lineWidth=42;g.strokeStyle='#191b17';g.beginPath();g.moveTo(0,-105);g.lineTo(-14,-10);g.lineTo(-98,56);g.moveTo(-12,-5);g.lineTo(82,48);g.stroke();
+  g.lineWidth=28;g.beginPath();g.moveTo(-14,-8);g.lineTo(-42,90);g.moveTo(-14,-8);g.lineTo(72,108);g.stroke();g.restore();
+  g.strokeStyle='rgba(23,22,19,.52)';g.lineWidth=3;g.beginPath();g.moveTo(500,40);g.lineTo(500,110);g.moveTo(520,40);g.lineTo(520,110);g.stroke();
+  for(let i=0;i<180;i++){const x=Math.random()*1024,y=Math.random()*512;g.fillStyle=Math.random()>.5?'rgba(15,15,13,.12)':'rgba(250,240,215,.12)';g.fillRect(x,y,1+Math.random()*3,1+Math.random()*2);}
+  for(let i=0;i<28;i++){const x=Math.random()*1024;g.strokeStyle='rgba(32,29,24,.18)';g.lineWidth=.6+Math.random()*1.3;g.beginPath();g.moveTo(x,Math.random()*80);g.lineTo(x+(Math.random()-.5)*12,512);g.stroke();}
+  g.fillStyle='rgba(19,18,16,.24)';for(let y=0;y<512;y+=7)g.fillRect(0,y,1024,1);
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.minFilter=THREE.LinearMipmapLinearFilter;tex.magFilter=THREE.LinearFilter;return tex;
+}
 function buildAbattoir() {
   const z=newZone('abattoir',0x282522,.049,{minX:-12,maxX:12,minZ:-10,maxZ:10},[0,0,7.0]);
   const floor=mat(0x403a32,1,{map:TEX.wood,bumpScale:.14});addBox(z.group,0,-.15,0,24,.3,20,floor);
@@ -1450,7 +1466,7 @@ function buildAbattoir() {
   }
   for(let row=0;row<9;row++)for(let col=0;col<16;col++){const a=row*17+col,b=a+1,c=a+17,d=c+1;sheetIdx.push(a,c,b,b,c,d);}
   sheetGeo.setAttribute('position',new THREE.Float32BufferAttribute(sheetPos,3));sheetGeo.setAttribute('uv',new THREE.Float32BufferAttribute(sheetUv,2));sheetGeo.setIndex(sheetIdx);sheetGeo.computeVertexNormals();
-  const sheetMat=new THREE.MeshStandardMaterial({color:0xc5bda9,roughness:1,transparent:true,opacity:.82,side:THREE.DoubleSide,emissive:0x191814,emissiveIntensity:.16});
+  const sheetMat=new THREE.MeshBasicMaterial({map:makeCollapseFilmTexture(),color:0xc5bda9,transparent:true,opacity:.30,side:THREE.DoubleSide,toneMapped:false});
   const sheet=new THREE.Mesh(sheetGeo,sheetMat);z.group.add(sheet);storyRef.collapseScreen=sheet;
   const sheetRod=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,6.8,8),M.rust);sheetRod.rotation.z=Math.PI/2;sheetRod.position.set(0,3.58,-9.5);z.group.add(sheetRod);
   for(const x of [-3.0,3.0]){const rope=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.62,6),M.darkWood);rope.position.set(x,3.88,-9.5);z.group.add(rope);const hook=new THREE.Mesh(new THREE.TorusGeometry(.055,.012,5,12),M.rust);hook.position.set(x,3.52,-9.5);z.group.add(hook);}
@@ -2948,6 +2964,8 @@ function endCorradoTeaScene(){
 function startCollapseScreening(){
   if(storyFlags.has('spectacle-seen')||storyScene||gameEnded)return;
   keys.clear();controls.unlock();dialogueOpen=false;
+  if(storyRef.collapseScreen?.material)storyRef.collapseScreen.material.opacity=.86;
+  if(storyRef.projectorBeam?.material)storyRef.projectorBeam.material.opacity=.13;
   storyScene={type:'screening',t:0,dur:19.5,i:0,flashA:false,flashB:false,sound:false,lines:[
     [.6,'Voice: A sheet, a projector, thirteen chairs. The room has built a cinema out of its own furniture.'],
     [3.2,'Voice: The image arrives first. A body falls behind the white cloth.'],
@@ -2960,7 +2978,10 @@ function startCollapseScreening(){
 function endCollapseScreening(){
   storyFlags.add('spectacle-seen');storyFlags.add('complicit');
   journal.push({id:'collapse-screening',title:'The Audience',description:'The family watched collapses on a bedsheet as if they were a match. The image came first; the sound arrived later. You remained seated until the reel stopped.',kind:'witness account',zone:'abattoir'});
-  updateJournalCount();updateMissions();storyScene=null;camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
+  updateJournalCount();updateMissions();storyScene=null;
+  if(storyRef.collapseScreen?.material)storyRef.collapseScreen.material.opacity=.32;
+  if(storyRef.projectorBeam?.material)storyRef.projectorBeam.material.opacity=.035;
+  camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
   showToast('THE REEL HAS STOPPED. YOU ARE STILL IN YOUR SEAT.');
 }
 function startDarioEavesdrop(){
@@ -3089,6 +3110,9 @@ function updateStoryScene(dt, t) {
   if (s.type === 'hold') { if (s.t >= s.dur) storyScene = null; }
   else if(s.type==='screening'){
     camera.position.set(0,1.68,5.8);camera.lookAt(0,2.0,-9.45);
+    if(storyRef.projectorReels)storyRef.projectorReels.forEach((reel,i)=>{reel.rotation.z+=dt*(i===0?5.6:-4.9);});
+    if(storyRef.collapseScreen?.material)storyRef.collapseScreen.material.opacity=.80+Math.sin(s.t*21)*.055;
+    if(storyRef.projectorBeam?.material)storyRef.projectorBeam.material.opacity=.085+Math.sin(s.t*13)*.018;
     if(s.t>=4.6&&!s.flashA){s.flashA=true;flashFragment('collapse',135);glitchPulse=Math.max(glitchPulse,.8);}
     if(s.t>=8.2&&!s.flashB){s.flashB=true;flashFragment('nosebleed',125);glitchPulse=Math.max(glitchPulse,1.0);}
     if(s.t>=11.5&&!s.sound){s.sound=true;audio?.mechanicalNoise(.28,380,.8,.12,0);audio?.mechanicalTone(92,35,1.6,'sawtooth',.075,0);}
