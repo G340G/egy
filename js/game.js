@@ -1256,7 +1256,7 @@ function buildHome() {
   const dario=addCultist(z,-8.0,-6.1,'Dario',0x302d28,1,'I believe in The White. I believe in it more than anyone in this house. That is why they avoid looking at me.',['Who leads the rite?','You believe too much.'],['There is no leader. Only a man who knows where to stand.','That is what they say. I would rather be hated for believing than loved for pretending.']);dario.isLeader=true;
   const sergio=addCultist(z,-.8,-6.5,'Sergio',0x4a443a,0,'I stopped believing years ago. I stayed for the company. There was nowhere else to eat in peace.',['Then why not leave?','Did you know what happened in 1977?'],['Loneliness is a door that opens inward. You can walk through it and still be in the same room.','I heard the plan for Dario through the wall. I did not tell him. That is when I belonged here.']);
   addCultist(z,7.9,-6.2,'Marta',0x51483d,0,'I engrave my memoirs with a sunshine that was never there. The gold in the photograph is a lie. I remember the colour, not the day.',['Which memory is true?','Why do you keep writing?'],['The one that hurts the least is usually the one I invented.','If I stop, the memories begin to move without me.']);
-  const pino=addCultist(z,8.05,.4,'Pino',0x3d423d,1,'I know how to leave. I know the road, the ditch and the combine. I have been waiting for a reason to run.',['Show me the field path.','Do not go.'],['When the machine starts, do not watch the blades. Watch the man who told you it was only work.','You can ask me to stay. You cannot make the road forget me.']);pino.isRunner=true;
+  const pino=addCultist(z,8.05,.4,'Pino',0x3d423d,1,'I know how to leave. I know the road, the ditch and the combine. I have been waiting for a reason to run.',['Show me the field path.','Do not go.'],['When the machine starts, do not watch the blades. Watch the man who told you it was only work.','You can ask me to stay. You cannot make the road forget me.']);pino.isRunner=true;storyRef.pino=pino;
   addCultist(z,8.05,6.1,'Gabri',0x544b43,1,'I wanted someone to look at me without looking through me. In the car, I thought the thermos was a gift.',['Did Ines come with you?','What did you want from The White?'],['She was kind. That was the part I trusted.','An audience. Something that would finally notice I was there.']);
   addCultist(z,.2,7.0,'Walter',0x343a37,1,'Give me a task and I can become a person for as long as it takes to finish it.',['Who gave you the last task?','What happens when it is done?'],['The man with the paperback. He never tells you to push. He only tells you where to stand.','There is always another task. That is how the room keeps its shape.']);
   addCultist(z,-7.8,6.3,'Livia',0x5a4c43,0,'I lost my speech. I kept the melody. Sometimes I can still sing the interval before the machine starts.',['Can you sing it now?','Who taught you the song?'],['No. The note has moved into my teeth.','A woman who never learned the words. She only knew when to breathe.']);
@@ -3059,6 +3059,41 @@ function addPastoraleStation(zone,id,title,description,x,z,kind){
   }});
   return root;
 }
+function startPinoCombineScene(){
+  if(storyFlags.has('pino-collapsed')){showToast('THE FIELD HAS ALREADY KEPT HIM.');return;}
+  if(!storyFlags.has('pino-sent')||storyScene||gameEnded||currentZone!=='road')return;
+  const pino=storyRef.pino,machine=storyRef.combine;
+  if(!pino||!machine){console.error('Pino combine scene is missing its character or machine reference.');showToast('THE FIELD IS EMPTY. THE ENGINE HAS NO WITNESS.');return;}
+  if(pino.fate==='dead'){showToast('PINO IS NO LONGER HERE.');return;}
+  keys.clear();controls.unlock();dialogueOpen=false;activeTarget=null;
+  $('subtitle-wrap').classList.remove('visible');$('dialogue-options').innerHTML='';$('prompt').classList.remove('visible');
+  if(pino.object.parent!==zones.road.group)transferCultist(pino,zones.road,-49,-34);
+  pino.fate='present';pino.object.visible=true;pino.object.position.set(-49,0,-34);pino.point=pino.object.position;pino.object.rotation.set(0,-Math.PI/2,0);pino.walking=true;
+  machine.visible=true;machine.position.set(-42,0,-35);machine.rotation.set(0,-Math.PI/2,0);
+  storyFlags.add('pino-combine-started');
+  storyScene={type:'pino-combine',t:0,dur:16,i:0,pino,machine,collapse:false,sound:false,lines:[
+    [.7,'Tobia: The engine is running. There is nobody in the cab.'],
+    [3.1,'Pino: I thought it was only a machine. I thought that meant the work belonged to nobody.'],
+    [6.1,'Tobia: Pino does not look at you. The man who sent him here is nowhere in the field.'],
+    [9.2,'Voice: The blades turn. The field accepts the body as another part of the harvest.'],
+    [13.1,'Tobia: The engine keeps running after the sound of him has stopped.']
+  ]};
+  audio?.mechanicalTone(58,30,4.2,'sawtooth',.055,0);
+  showToast('THE ENGINE IS RUNNING. STAY WITH THE FIELD.');
+}
+function endPinoCombineScene(){
+  const s=storyScene;if(!s||s.type!=='pino-combine')return;
+  const pino=s.pino||storyRef.pino,machine=s.machine||storyRef.combine;
+  if(pino){pino.fate='dead';pino.walking=false;pino.object.visible=false;}
+  if(machine){machine.position.set(-52,0,-35);machine.rotation.set(0,-Math.PI/2,0);}
+  storyFlags.add('pino-collapsed');storyFlags.add('complicit');
+  if(!journal.some(entry=>entry.id==='pino-combine-death'))journal.push({id:'pino-combine-death',title:'The Field Kept Pino',description:'Pino ran toward the combine because he believed the road might still lead somewhere. The machine crossed the field without a driver. You watched it take him. The engine continued after there was no one left to follow.',kind:'witness account',zone:'road'});
+  updateJournalCount();storyScene=null;dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');
+  camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
+  showToast('THE ENGINE HAS STOPPED. THE FIELD HAS NOT.');
+  updateMissions();
+}
+
 function buildStory() {
   addIndustry(zones.road.group, 56, -58, 1.1);
   addIndustry(zones.road.group, -60, -62, 1);
@@ -3130,15 +3165,15 @@ function updateStoryScene(dt, t) {
     if(s.t>=s.dur)endDarioEavesdrop();
   }
   else if(s.type==='pino-combine'){
-    const pino=storyRef.pino,machine=storyRef.combine;
+    const pino=s.pino||storyRef.pino,machine=s.machine||storyRef.combine;
     camera.position.set(-37.2,6.8,-27.8);camera.lookAt(-51,1.0,-39.5);
     if(pino&&pino.fate!=='dead'){
-      pino.object.position.x=-49-Math.min(8.2,s.t*1.02);
-      pino.object.position.z=-34-Math.sin(s.t*.55)*.55;
+      pino.object.position.x=-49-Math.min(5.75,s.t*.72);
+      pino.object.position.z=-34-Math.sin(s.t*.55)*.22;
       pino.object.rotation.y=-Math.PI/2;pino.object.rotation.z=Math.sin(s.t*4)*.08;pino.walking=true;
     }
     if(machine){
-      machine.position.x=-42-Math.max(0,s.t-1.8)*1.55;machine.position.z=-35-Math.max(0,s.t-1.8)*.36;machine.rotation.y=-Math.PI/2;
+      machine.position.x=-42-Math.min(10,Math.max(0,s.t-1.8)*1.62);machine.position.z=-35+Math.sin(s.t*.3)*.12;machine.rotation.y=-Math.PI/2;
       if(machine.userData.reel)machine.userData.reel.rotation.x+=dt*2.4;
       if(machine.userData.wheels)machine.userData.wheels.forEach(w=>{w.rotation.z+=dt*4.8;});
     }
