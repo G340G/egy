@@ -1817,7 +1817,7 @@ function speakVoice(text, npcName = '') {
 }
 function openDialogue(npc) {
   if (dialogueOpen) return;
-  if (npc.talkedOnce && !/primo/i.test(npc.name || '')) { showToast('THEY HAVE NOTHING MORE TO SAY.'); return; }
+  if (npc.talkedOnce && !npc.isOpeningPrimo && !/primo|the first/i.test(npc.name || '')) { showToast('THEY HAVE NOTHING MORE TO SAY.'); return; }
   dialogueOpen = true; controls.unlock(); $('subtitle-wrap').classList.add('visible');
   $('speaker').textContent = npc.name.toUpperCase(); $('subtitle').textContent = npc.dialogue?.line || 'No answer. Only the sound of clothes.'; speakVoice(npc.dialogue?.line || 'No answer.',npc.name);
   const options = $('dialogue-options'); options.innerHTML = '';
@@ -1828,7 +1828,7 @@ function openDialogue(npc) {
   activeTarget = null; $('prompt').classList.remove('visible');
 }
 function chooseDialogue(npc, index) {
-  if(!npc||npc.talkedOnce)return;
+  if(!npc||(npc.talkedOnce&&!npc.isOpeningPrimo&&!/the first/i.test(npc.name||'')))return;
   npc.talkedOnce=true;
   let reply = npc.dialogue?.replies?.[index] || 'The answer comes from a room that does not exist.';
   const lower=(npc.name||'').toLowerCase();
@@ -1904,6 +1904,8 @@ function beginListening(){
   if(collected.size<clueCount){showToast('THE PLATTER IS EMPTY. COLLECT ALL EIGHT CLUES.');return;}
   if(!storyFlags.has('altar-lit')){showToast('THE ALTAR IS STILL DARK. LIGHT ALL THREE CANDLES FIRST.');return;}
   if(!storyFlags.has('darkroom-cleared')){showToast('THE DARK ROOM HAS NOT BEEN SEARCHED. FIND THE SIX RECORDS OF WHAT HAPPENED.');return;}
+  if(!storyFlags.has('corrado-tea')){showToast('THE FIRST IS STILL IN THE SLAUGHTERHOUSE. ASK HIM ABOUT THE EARPLUGS.');return;}
+  storyFlags.add('listened-to-white');
   if (listeningPending || gameEnded) return;
   // Lock the player inside the listening room. Every remaining cultist is brought
   // into view and receives a visible fate before the ending choices are revealed.
@@ -2452,11 +2454,13 @@ function applyConsequences(npc, index) {
   if (key === 'ottavio' && index === 0) { storyFlags.add('ottavio-cold'); showToast('OTTAVIO TURNS HIS BACK ON YOU. SERGIO MAY STILL SPEAK.'); }
   if (key === 'ines' && index === 1) { queueCultFate('Ines was betrayed', npc, 'collapse'); fear = Math.min(1, fear + .12); showToast('INES HAS UNDERSTOOD. THE HOUSE TIGHTENS.'); }
   if (key === 'dario' && index === 1) { storyFlags.add('primo-alerted'); showToast('THE FIRST HAS HEARD YOUR NAME.'); }
+  if(key==='pino'&&index===0){storyFlags.add('pino-sent');showToast('PINO HAS SHOWN YOU THE FIELD PATH. THE ENGINE IS STILL WARM.');}
   if (key === 'anna' && index === 1) { queueCultFate('Anna’s empty place', npc, 'collapse'); }
   if (key === 'sergio' && index === 1) { fear = Math.min(1, fear + .05); }
   if (key === 'il primo' && npc.isOpeningPrimo) { storyFlags.add('met-primo'); storyFlags.add('primo-first-contact'); }
   else if (key === 'the first') { const d = primoDialogue(); d.actions?.[index]?.(); }
   applyChoiceEffect(key,index,npc);
+  if(key==='the first'&&storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))startCorradoTeaScene(npc);
   if (storyFlags.has('primo-alerted')) placeStalker(currentZone);
   updateMissions();
 }
@@ -2787,36 +2791,51 @@ function buildForest() {
 // Il Primo: friendly on the surface, and every task he gives brings the new arrival closer to the void.
 function primoDialogue(){
   const f=storyFlags;
+  if(f.has('darkroom-cleared')&&!f.has('corrado-tea'))return{line:'You read the margins. Those numbers are not instructions for falling. They are the seconds I watched after each body stopped moving. You found the earplugs, too.',choices:['Why did you wear them?','Did you ever hear The White?'],replies:['I wanted the image without the sound. Sound makes a fall belong to someone. An image can be kept.','I heard the reels turn. I heard the room when the motor stopped. I never heard an album.'],actions:[()=>storyFlags.add('corrado-questioned'),()=>storyFlags.add('corrado-questioned')]};
+  if(f.has('corrado-tea'))return{line:'The cup was warm. The room was not. You keep looking for the moment I fell, but you have already watched it. The sound came later.',choices:['Who is left in the house?','What was The White?'],replies:['The person who pours. The person who opens the door. The person who arrives.','A room that kept being mistaken for a song. That is all I can tell you now.'],actions:[()=>storyFlags.add('ines-survivor-seen'),()=>storyFlags.add('white-questioned')]};
   if(f.has('escaped-forest'))return{line:'You came back. I thought you might. There is a particular way a person walks after seeing the place where they would disappear. You do not have to tell me what you saw.',choices:['I want to leave.','Why did you bring me there?'],replies:['Of course. I would never keep you. The door is open; you only have to decide which side of it you are on.','I wanted you to hear the trees without the village speaking over them. You heard something. That is not the same as understanding it.'],actions:[()=>storyFlags.add('primo-leave'),()=>storyFlags.add('primo-questioned')]};
   if(f.has('primo-task-dig')&&f.has('primo-task-candles'))return{line:'The album is almost ready. You have done more than I asked, and I am grateful. But you have started looking at the doors instead of the rooms. That usually means a person is close to deciding.',choices:['Take me to the car.','I want to leave.','What do you need from me?'],replies:['Good. We can speak where the walls cannot interrupt. The forest is quieter than this room.','Then go. I will not follow. I only hope you do not mistake the road for an answer.','Nothing you do not already know how to give. A little attention. A little space. Your name, perhaps, if you still feel it belongs to you.'],actions:[()=>{storyFlags.add('car-invited');pendingCar=true;},()=>storyFlags.add('primo-leave'),()=>storyFlags.add('primo-questioned')]};
   if(f.has('met-primo'))return{line:'You remember the lamp. I was glad to see you reach it. You looked relieved when I spoke to you. People rarely notice how much they need that small kindness until it is offered.',choices:['You made this place feel safe.','You knew I was coming.','Why are you helping me?'],replies:['I wanted you to feel there was somewhere to return to. A person will walk a very long way if they believe someone has noticed their arrival.','I knew the letter would find you. I did not know what you would bring with you. That part is always your own.','Because carrying yourself everywhere is exhausting. I thought you might want to set something down.'],actions:[()=>storyFlags.add('primo-trust'),()=>storyFlags.add('primo-suspicion'),()=>storyFlags.add('primo-questioned')]};
   return{line:'Good. You listened to the wrong things first, which is how everyone arrives. Let me give you something to do with your hands while you decide what you came for.',choices:['Why must I dig a grave?','What are the candles for?','Take me somewhere quiet.'],replies:['The ground under the willow remembers the first name we lost. Dig it up, and you will understand why we never say it aloud.','Three flames on the altar, so the choir can see where to fall. Light them, and the house will stop asking you questions.','Get in the car. There is a quiet place in the forest. Nobody hears a car in the forest.'],actions:[()=>storyFlags.add('primo-task-dig'),()=>storyFlags.add('primo-task-candles'),()=>{storyFlags.add('car-invited');pendingCar=true;}]};
 }
 
-function startPinoCombineScene(){
-  if(storyFlags.has('pino-collapsed')||storyScene||gameEnded)return;
-  const pino=cultRoster.find(n=>n.name==='Pino');
-  if(!pino||pino.fate!=='present'){showToast('THE FIELD IS QUIET. THE MACHINE IS STILL WARM.');return;}
-  storyFlags.add('pino-watched');keys.clear();controls.unlock();dialogueOpen=false;
-  const old=Object.values(zones).find(v=>v.interactables.includes(pino));if(old){const ix=old.interactables.indexOf(pino);if(ix>=0)old.interactables.splice(ix,1);}
-  pino.fate='present';pino.object.visible=true;pino.object.position.set(-49,0,-34);pino.object.rotation.y=Math.PI/2;pino.walking=true;storyRef.pino=pino;
-  const machine=storyRef.combine;if(machine){machine.visible=true;machine.position.set(-42,0,-35);machine.rotation.y=-Math.PI/2;}
-  playerAnchor.position.set(-37,0,-31);
-  storyScene={type:'pino-combine',t:0,dur:15,i:0,collapse:false,sound:false,lines:[
-    [.7,'Pino: I know how to leave. I have known it for years.'],
-    [3.4,'Voice: He runs. The machine starts after him. No one calls it a hunt.'],
-    [6.7,'Tobia: I could shout. I could leave the path. I keep watching.'],
-    [10.6,'Voice: The image finishes first. The sound is late enough to make the fall look chosen.'],
-    [13.0,'Voice: The field will be planted again. The place where he fell will not be marked.']
+function buildTeacup(group,x,y,z){
+  const root=new THREE.Group();root.position.set(x,y,z);group.add(root);
+  const porcelain=mat(0xb9b09d,.24,{metalness:.08}),tea=mat(0x24150f,.18,{metalness:.04});
+  const profile=[new THREE.Vector2(.07,0),new THREE.Vector2(.11,.025),new THREE.Vector2(.15,.16),new THREE.Vector2(.18,.28),new THREE.Vector2(.15,.31),new THREE.Vector2(.06,.31)];
+  const cup=new THREE.Mesh(new THREE.LatheGeometry(profile,24),porcelain);cup.position.y=.03;root.add(cup);
+  const liquid=new THREE.Mesh(new THREE.CircleGeometry(.145,24),tea);liquid.rotation.x=-Math.PI/2;liquid.position.y=.32;root.add(liquid);
+  const handle=new THREE.Mesh(new THREE.TorusGeometry(.105,.025,7,20,Math.PI*1.55),porcelain);handle.position.set(.16,.20,0);handle.rotation.z=-.6;root.add(handle);
+  const saucer=new THREE.Mesh(new THREE.TorusGeometry(.19,.025,6,24),porcelain);saucer.rotation.x=Math.PI/2;saucer.position.y=.02;root.add(saucer);return root;
+}
+function startCorradoTeaScene(primo){
+  if(storyFlags.has('corrado-tea')||storyScene||gameEnded)return;
+  const ines=cultRoster.find(n=>n.name==='Ines');
+  if(!ines||ines.fate!=='present'){triggerDeath('THE TEA NEVER CAME','Ines was no longer there to pour it. The room had lost the one person who knew how to make an ending gentle.');return;}
+  storyFlags.add('corrado-tea-started');keys.clear();controls.unlock();dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');
+  const z=zones.abattoir;const old=z.interactables.indexOf(primo);if(old>=0)z.interactables.splice(old,1);
+  if(ines.object.parent!==z.group)transferCultist(ines,z,-2.4,-5.35);else ines.object.position.set(-2.4,0,-5.35);
+  ines.point=ines.object.position;ines.object.rotation.y=.72;primo.object.position.set(0,0,-7.15);primo.object.rotation.y=Math.PI;
+  const cup=buildTeacup(z.group,-.78,.015,-5.95);storyRef.corradoCup=cup;
+  const thermos=buildThermos(z.group,-2.6,0,-5.0);thermos.scale.setScalar(.72);storyRef.corradoThermos=thermos;
+  storyScene={type:'corrado-tea',t:0,dur:17,i:0,leader:primo,ines,cup,collapsed:false,sound:false,lines:[
+    [.7,'Tobia: She crosses the room with the thermos. Nobody asks her to.'],
+    [3.4,'Ines: You have watched so many things fall. You must be tired.'],
+    [6.4,'Corrado: I kept the image. I wore the plugs so the sound could not make a claim on me.'],
+    [9.3,'Tobia: The cup touches the table. Corrado watches the dust settle.'],
+    [11.1,'Ines: Someone has to make it gentle.'],
+    [14.1,'Voice: The sound arrives late. The man is already gone.']
   ]};
 }
-function endPinoCombineScene(){
-  const pino=storyRef.pino;if(pino){pino.walking=false;pino.object.visible=false;pino.fate='dead';}
-  if(storyRef.combine)storyRef.combine.visible=true;
-  storyFlags.add('pino-collapsed');storyFlags.add('watched-collapse');
-  journal.push({id:'pino-collapse',title:'The field after Pino',description:'The combine kept moving after Pino stopped. The sound arrived late. You watched until the field became an image again, then called it an accident.',kind:'witness account',zone:'road'});updateJournalCount();updateMissions();
-  storyScene=null;playerAnchor.position.set(-37,0,-31);camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();audio?.setZone('road');
-  showToast('THE ENGINE HAS LEFT THE FIELD. THE FIELD HAS NOT FORGOTTEN.');
+function endCorradoTeaScene(){
+  const s=storyScene;if(!s||s.type!=='corrado-tea')return;
+  const primo=s.leader,ines=s.ines;
+  if(primo){primo.fate='dead';primo.object.visible=false;}
+  if(ines){ines.talkedOnce=true;ines.fate='present';ines.object.visible=true;}
+  storyFlags.add('corrado-tea');storyFlags.add('corrado-dead');storyFlags.add('institution-survives');
+  journal.push({id:'corrado-tea',title:'The cup at 03:17',description:'Ines poured tea for Corrado as he watched dust settle. The image of his fall arrived before its sound. She stayed. The house still had someone to open the door.',kind:'witness account',zone:'abattoir'});updateJournalCount();updateMissions();
+  storyScene=null;dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
+  showToast('THE FIRST IS GONE. THE HOUSE IS NOT EMPTY.');
 }
 function storyLine(text) {
   const m = /^([^:]+):\s*/.exec(text);
