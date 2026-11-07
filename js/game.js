@@ -959,7 +959,7 @@ function triggerKillScene() {
   for(const npc of [victim,executioner]){const ix=z.interactables.findIndex(v=>v.id===npc.id);if(ix>=0)z.interactables.splice(ix,1);}
   const stain=new THREE.Mesh(new THREE.CircleGeometry(.85,32),new THREE.MeshBasicMaterial({color:0x270708,transparent:true,opacity:0}));
   stain.rotation.x=-Math.PI/2;stain.position.set(0,.015,-1.8);z.group.add(stain);
-  const event={id:'cantore_scene',type:'event',object:victim.object,point:victim.object.position,radius:4.8,prompt:'[ E ] RESTA NELLA NAVATA',done:false,run:()=>{
+  const event={id:'cantore_scene',type:'event',object:victim.object,point:victim.object.position,radius:4.8,prompt:'[ E ] REMAIN IN THE NAVE',done:false,run:()=>{
     if(event.done)return;event.done=true;controls.unlock();dialogueOpen=true;
     $('speaker').textContent='RECORDING / 03:17';
     $('subtitle').textContent='Dario tilts his head. The singer stops singing. The bell continues to vibrate, though nobody touches it. A voice from the bell tower speaks a name that is not his.';
@@ -983,10 +983,10 @@ function triggerAnnaScene(z, annaMarker) {
   const ev={id:'anna_scene',type:'event',object:annaMarker,point:annaMarker.position,radius:3.4,prompt:'[ E ] LOOK AT THE EMPTY CHAIR',done:false,run:()=>{
     if(ev.done)return;ev.done=true;controls.unlock();dialogueOpen=true;
     const annaStillPresent=['present','queued'].includes(anna.fate);
-    $('speaker').textContent='ANNA / CUCINA';
+    $('speaker').textContent='ANNA / KITCHEN';
     $('subtitle').textContent=annaStillPresent?'Anna sets the plate before an empty place. “He only eats when nobody is looking.” The kitchen light goes out.':'The plate is still warm. The chair was empty before you entered. Someone continues to chew inside the wall.';
     speakVoice($('subtitle').textContent,'Anna');$('subtitle-wrap').classList.add('visible');
-    $('dialogue-options').innerHTML='<button class="dialogue-option" id="anna-continue"><b>[↵]</b>Resta immobile.</button>';
+    $('dialogue-options').innerHTML='<button class="dialogue-option" id="anna-continue"><b>[↵]</b>Remain still.</button>';
     $('anna-continue').onclick=()=>{
       if('speechSynthesis'in window)window.speechSynthesis.cancel();$('subtitle-wrap').classList.remove('visible');dialogueOpen=false;
       if(annaStillPresent){
@@ -1239,13 +1239,13 @@ function buildHome() {
   addCultist(z,2.7,6.6,'Elio',0x34322e,1,'The thirteenth chair always faced the wall. The fourteenth had no chair at all.',['Who was the fourteenth?','Why face the wall?'],['The one who arrives after the counting has ended.','So nobody could mistake the empty place for an invitation.']);
   // A staged domestic killing: the room offers the player a choice to look.
   const annaMarker=new THREE.Mesh(new THREE.BoxGeometry(.22,.08,.22),M.clue);annaMarker.position.set(-5.2,.12,1.2);z.group.add(annaMarker);
-  z.interactables.push({id:'anna_scene_trigger',type:'event',object:annaMarker,point:annaMarker.position,radius:3.2,prompt:'[ E ] GUARDA IL POSTO VUOTO',run:()=>triggerAnnaScene(z,annaMarker)});
+  z.interactables.push({id:'anna_scene_trigger',type:'event',object:annaMarker,point:annaMarker.position,radius:3.2,prompt:'[ E ] LOOK AT THE EMPTY PLACE',run:()=>triggerAnnaScene(z,annaMarker)});
   // Evidence in plain sight, once you stop looking for the album.
   addClueMesh(z.group,new THREE.Vector3(-5.2,1.1,2.0),'Seating List','A list of thirteen names. Beneath them, a fourteenth line has been erased so forcefully that it has scored the paper.','list','paper',{requiresFlag:'talked-ines',blockedHint:'Speak with Ines before examining the seating list.'});
   addClueMesh(z.group,new THREE.Vector3(5.8,1.45,-5.0),'Tuning Fork','A tuning fork. A=415 is engraved on the handle. The note does not match the one in your head.','fork','metal',{requiresFlag:'talked-ottavio',blockedHint:'Speak with Ottavio before examining the tuning fork.'});
   addClueMesh(z.group,new THREE.Vector3(1.2,.06,6.1),'The carved beam','A dog, a summer table, a room with no doors. The carvings were cut by several hands, but all share the same shallow final line.','beam','wood');
-  const exit = addDoor(z.group, 0, 8.95, 'la strada', 'road', [0, 0, -3.4]); exit.prompt = '[ E ] TORNA ALLA STRADA';
-  const hatch = addDoor(z.group,8.7,-6.2,'la cantina','cellar',[0,0,4.5],true,{rotationY:Math.PI/2,style:'hatch'}); hatch.prompt = '[ E ] SCENDI — LA CANTINA';
+  const exit = addDoor(z.group,0,8.95,'the road','road',[0,0,-3.4]);exit.prompt='[ E ] RETURN TO THE ROAD';
+  const hatch = addDoor(z.group,8.7,-6.2,'the cellar','cellar',[0,0,4.5],true,{rotationY:Math.PI/2,style:'hatch'});hatch.prompt='[ E ] DESCEND — THE CELLAR';
   // The cover is removed as soon as all eight documents have been collected.
   const hatchCover = new THREE.Group();
   hatchCover.name = 'CELLAR_HATCH_COVER';
@@ -1835,7 +1835,7 @@ function chooseDialogue(npc, index) {
   if(lower==='ines'){storyFlags.add(index===0?'ines-trust':'ines-betrayed');storyFlags.add('talked-ines');}
   if(lower==='sergio'){storyFlags.add(index===0?'sergio-truth':'sergio-silence');}
   if(lower==='dario'){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
-  if(lower==='il primo'&&!npc.isOpeningPrimo){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
+  if(lower==='the first'&&!npc.isOpeningPrimo){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
   if(lower==='father remo'||lower==='don remo'){storyFlags.add('talked-remo');if(index===1)showToast('DON REMO HAS EXPLAINED THE ALTAR. LIGHT ALL THREE CANDLES.');}
   if(lower==='the widow'||lower==='widow')storyFlags.add('talked-widow');
   if(lower==='ottavio'){storyFlags.add('talked-ottavio');if(index===1)storyFlags.add('ottavio-audio');}
@@ -1859,13 +1859,13 @@ function openJournal() {
 function closeJournal() { journalOpen = false; $('journal').classList.remove('active'); if (gameStarted && !gameEnded) controls.lock(); }
 function renderJournal() {
   const list = $('journal-list'); list.innerHTML = '';
-  if (!journal.length) { list.innerHTML = '<div class="empty-note">Nessuna traccia registrata.<br><br>La casa non è ancora visibile.</div>'; return; }
+  if (!journal.length) { list.innerHTML = '<div class="empty-note">No clues recorded.<br><br>The house is not visible yet.</div>'; return; }
   journal.forEach((entry, i) => {
     const b = document.createElement('button'); b.className = `journal-entry${i === 0 ? ' active' : ''}`;
     b.innerHTML = `<small>${String(i + 1).padStart(2, '0')} / ${entry.zone.toUpperCase()}</small><strong>${entry.title}</strong>`;
     b.addEventListener('click', () => {
       list.querySelectorAll('.journal-entry').forEach(x => x.classList.remove('active')); b.classList.add('active');
-      $('journal-detail').innerHTML = `<div class="detail-stamp">EPISTASSI / TRACCIA ${String(i + 1).padStart(2, '0')}</div><h3>${entry.title}</h3><p>${entry.description}</p><div class="detail-foot">RITROVATO IN: ${entry.zone.toUpperCase()} · CUSTODITO NEL TACCUINO</div>`;
+      $('journal-detail').innerHTML = `<div class="detail-stamp">EPISTASSI / CLUE ${String(i + 1).padStart(2, '0')}</div><h3>${entry.title}</h3><p>${entry.description}</p><div class="detail-foot">FOUND IN: ${entry.zone.toUpperCase()} · KEPT IN THE JOURNAL</div>`;
     });
     list.appendChild(b);
   });
@@ -1879,7 +1879,7 @@ function inspectTarget(item) {
   if (item.type === 'door') {
     const required = item.requiredClues ?? (item.locked ? clueCount : 0);
     if (collected.size < required) {
-      showToast(`MANCANO ${required - collected.size} TRACCE. LA PORTA NON RICONOSCE LE TUE MANI.`);
+      showToast(`${required - collected.size} CLUES MISSING. THE DOOR DOES NOT RECOGNISE YOUR HANDS.`);
       audio.stinger(.22);
       return;
     }
@@ -1887,7 +1887,7 @@ function inspectTarget(item) {
   }
   if (item.type === 'listen') { beginListening(); return; }
   if (item.type === 'look') { showLook(item); return; }
-  if (item.type === 'tool') { tools.add(item.tool); const ix = zone.interactables.indexOf(item); if (ix >= 0) zone.interactables.splice(ix, 1); item.object.parent?.remove(item.object); showToast(`HAI PRESO: ${item.title.toUpperCase()}`); audio.stinger(.4); updateMissions(); return; }
+  if (item.type === 'tool') { tools.add(item.tool); const ix = zone.interactables.indexOf(item); if (ix >= 0) zone.interactables.splice(ix, 1); item.object.parent?.remove(item.object); showToast(`TAKEN: ${item.title.toUpperCase()}`); audio.stinger(.4); updateMissions(); return; }
   if (item.type === 'candle') { lightCandle(item.candle); return; }
   if (item.type === 'dig') { return; }
   if (item.type === 'egg') { collectRelic(item); return; }
@@ -1935,7 +1935,7 @@ function finishListening(){
 }
 function revealEndingChoices(){
   storyScene=null;$('subtitle-wrap').classList.remove('visible');$('ending-screen').classList.add('active');
-  $('ending-title').textContent='Il Bianco non è stato ascoltato.';$('ending-copy').textContent='The turntable is still in the cellar. The forest has made a place the size of a person.';
+  $('ending-title').textContent='The White Was Not Heard.';$('ending-copy').textContent='The turntable is still in the cellar. The forest has made a place the size of a person.';
   $('ending-small').textContent='THE THIRTEEN HAVE LEFT. WHAT YOU LEFT BEHIND REMAINS.';$('ending-choices').classList.add('visible');
   $('ending-testimony').style.display=storyFlags.has('grave-revealed')?'':'none';$('ending-result').classList.remove('visible');
 }
@@ -1955,7 +1955,7 @@ function resolveEnding(choice) {
   if(choice==='expose' && storyFlags.has('complicit')) result.copy += ' Hai lasciato intatti i ganci quando potevi intervenire; la verità arriva, ma non è innocente.';
   $('ending-title').textContent=result.title;$('ending-copy').textContent=result.copy;$('ending-small').textContent=result.small;
   $('ending-choices').classList.remove('visible');$('ending-result').classList.add('visible');
-  storyFlags.add(`ending-${choice}`);speakVoice(result.voice,'REGISTRAZIONE 14-B');
+  storyFlags.add(`ending-${choice}`);speakVoice(result.voice,'RECORDING 14-B');
   $('event-flash').classList.add('active');setTimeout(()=>$('event-flash').classList.remove('active'),420);
   glitchPulse=1.4;audio?.killSting();
   if(choice==='preserve'){fear=1;}
@@ -2104,7 +2104,7 @@ function requestMouseLock() {
     const result = controls.lock();
     if (result && typeof result.catch === 'function') result.catch(() => {});
   } catch (_) {
-    showToast('MOUSE LIBERO — WASD ATTIVO, TRASCINA PER GUARDARE.');
+    showToast('MOUSE FREE — WASD ACTIVE, DRAG TO LOOK.');
   }
 }
 function startGame() {
@@ -2326,7 +2326,7 @@ function updateDig(dt) {
   if (!digEntry) return;
   const digging = activeTarget === digEntry && keys.has('KeyE') && playerInputEnabled() && digAvailable();
   digProgress = digging ? Math.min(1, digProgress + dt / 4.5) : Math.max(0, digProgress - dt * .6);
-  if (activeTarget === digEntry) digEntry.prompt = digProgress > 0 ? `[ E ] DIGGING… ${Math.round(digProgress * 100)}%` : '[ E ] TIENI PREMUTO — SCAVA';
+  if (activeTarget === digEntry) digEntry.prompt = digProgress > 0 ? `[ E ] DIGGING… ${Math.round(digProgress * 100)}%` : '[ E ] HOLD — DIG';
   if (digging && digProgress >= 1 && !digDone) { digDone = true; completeDig(); }
 }
 function completeDig() {
@@ -2460,7 +2460,7 @@ function applyConsequences(npc, index) {
   if(key==='pino'&&index===0){storyFlags.add('pino-sent');showToast('PINO HAS SHOWN YOU THE FIELD PATH. THE ENGINE IS STILL WARM.');}
   if (key === 'anna' && index === 1) { queueCultFate('Anna’s empty place', npc, 'collapse'); }
   if (key === 'sergio' && index === 1) { fear = Math.min(1, fear + .05); }
-  if (key === 'il primo' && npc.isOpeningPrimo) { storyFlags.add('met-primo'); storyFlags.add('primo-first-contact'); }
+  if (key === 'the first' && npc.isOpeningPrimo) { storyFlags.add('met-primo'); storyFlags.add('primo-first-contact'); }
   else if (key === 'the first') { const d = primoDialogue(); d.actions?.[index]?.(); }
   applyChoiceEffect(key,index,npc);
   if(key==='the first'&&storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))startCorradoTeaScene(npc);
@@ -2955,7 +2955,7 @@ function updateStoryScene(dt, t) {
       if(!s.switched){
         s.switched=true;zones.cellar.group.visible=false;zones.forest.group.visible=true;zone=zones.forest;currentZone='forest';playerAnchor.position.set(0,0,0);camera.position.set(0,2.15,3.8);
         zones.forest.fogColor=0xc4cbc5;zones.forest.density=.024;scene.background.set(0xc4cbc5);scene.fog=new THREE.FogExp2(0xc4cbc5,.024);
-        $('location').textContent='BOSCO / LA FORMA DEL VUOTO';audio?.setZone('forest');if(storyRef.voidFigure)storyRef.voidFigure.visible=true;storyRef.voidLeaves?.forEach(l=>l.visible=true);
+        $('location').textContent='THE FOREST / THE SHAPE OF THE VOID';audio?.setZone('forest');if(storyRef.voidFigure)storyRef.voidFigure.visible=true;storyRef.voidLeaves?.forEach(l=>l.visible=true);
       }
       const travel=THREE.MathUtils.smoothstep(s.t,8.2,19.8);camera.position.set(Math.sin(s.t*.18)*.06,2.15+Math.sin(s.t*.4)*.035,3.8-travel*24.5);camera.lookAt(0,1.65,-29);
       const figure=storyRef.voidFigure;
