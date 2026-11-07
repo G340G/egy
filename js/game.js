@@ -2731,19 +2731,34 @@ function buildHand() {
   return g;
 }
 function buildCar() {
-  const g = new THREE.Group(); const wheels = [];
-  const paint = mat(0x1c2026, .35, { map: TEX.metal });
-  const glass = new THREE.MeshStandardMaterial({ color: 0x20262a, roughness: .1, metalness: .2, transparent: true, opacity: .55 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.7, .55, 3.7), paint); body.position.y = .6; g.add(body);
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.5, .5, 1.9), glass); cabin.position.set(0, 1.08, .15); g.add(cabin);
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(1.55, .06, 2.0), paint); roof.position.set(0, 1.35, .15); g.add(roof);
-  [[-.8, 1.2], [.8, 1.2], [-.8, -1.2], [.8, -1.2]].forEach(([x, z]) => {
-    const w = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .25, 14), mat(0x0a0a0a, .9)); w.rotation.z = Math.PI / 2; w.position.set(x, .34, z); g.add(w); wheels.push(w);
-  });
-  [-.6, .6].forEach(x => { const h = new THREE.Mesh(new THREE.BoxGeometry(.3, .14, .05), glow(0xfff0c0, 1.6)); h.position.set(x, .62, -1.86); g.add(h); });
-  const dash = new THREE.Mesh(new THREE.BoxGeometry(1.4, .2, .3), mat(0x1a1714)); dash.position.set(0, .98, -.6); g.add(dash);
-  g.userData.wheels = wheels;
-  return g;
+  const g=new THREE.Group(),wheels=[];
+  const paint=mat(0x24272a,.44,{map:TEX.metal,bumpScale:.018}),chrome=mat(0x8e928b,.34,{metalness:.78}),rubber=mat(0x111210,.94),glass=new THREE.MeshStandardMaterial({color:0x263032,roughness:.18,metalness:.12,transparent:true,opacity:.48,side:THREE.DoubleSide});
+  const body=roundedHousing(1.78,.62,3.72,.26,paint,.07);body.position.y=.62;g.add(body);
+  const hood=roundedHousing(1.70,.30,1.04,.19,paint,.045);hood.position.set(0,.99,-1.27);g.add(hood);
+  const trunk=roundedHousing(1.66,.29,.78,.16,paint,.04);trunk.position.set(0,.94,1.45);g.add(trunk);
+  const cabin=roundedHousing(1.52,.68,1.86,.18,glass,.04);cabin.position.set(0,1.21,.12);g.add(cabin);
+  const roof=roundedHousing(1.48,.10,1.66,.07,paint,.03);roof.position.set(0,1.59,.12);g.add(roof);
+  for(const side of [-1,1]){
+    const pillar=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.68,4,6),chrome);pillar.position.set(side*.69,1.23,.05);pillar.rotation.z=side*.15;g.add(pillar);
+    const doorLine=new THREE.Mesh(new THREE.TorusGeometry(.5,.012,4,18,Math.PI),chrome);doorLine.position.set(side*.79,.96,.25);doorLine.rotation.y=side*Math.PI/2;g.add(doorLine);
+  }
+  // Front grille and twin headlights: old bodywork, not a toy car silhouette.
+  const grille=new THREE.Mesh(new THREE.TorusGeometry(.28,.025,6,24,Math.PI),chrome);grille.position.set(0,.55,-1.89);grille.rotation.x=Math.PI/2;g.add(grille);
+  for(let i=0;i<8;i++){const slat=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.4,5),chrome);slat.rotation.x=Math.PI/2;slat.position.set(-.14+i*.04,.56,-1.90);g.add(slat);}
+  [-.62,.62].forEach(x=>{const lamp=new THREE.Mesh(new THREE.CylinderGeometry(.13,.14,.07,20),glow(0xe8dcb2,.95));lamp.rotation.x=Math.PI/2;lamp.position.set(x,.72,-1.91);g.add(lamp);const rim=new THREE.Mesh(new THREE.TorusGeometry(.14,.018,5,20),chrome);rim.position.set(x,.72,-1.94);g.add(rim);});
+  for(const [x,zp] of [[-.82,1.2],[.82,1.2],[-.82,-1.2],[.82,-1.2]]){
+    const wheel=new THREE.Group();wheel.position.set(x,.36,zp);g.add(wheel);
+    const tyre=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.24,20),rubber);tyre.rotation.z=Math.PI/2;wheel.add(tyre);
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(.23,.035,7,24),chrome);rim.rotation.y=Math.PI/2;wheel.add(rim);
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.10,.10,.26,18),mat(0x555951,.34,{metalness:.75}));hub.rotation.z=Math.PI/2;wheel.add(hub);wheels.push(wheel);
+  }
+  const dash=roundedHousing(1.38,.18,.26,.06,mat(0x171815,.88),.02);dash.position.set(0,1.03,-.62);g.add(dash);
+  const steering=new THREE.Mesh(new THREE.TorusGeometry(.22,.018,6,24),chrome);steering.position.set(-.32,1.20,-.35);steering.rotation.x=.35;g.add(steering);
+  const seatMat=mat(0x302c27,.95,{map:TEX.wood});for(const side of [-1,1]){
+    const seat=roundedHousing(.55,.62,.60,.13,seatMat,.035);seat.position.set(side*.42,.56,.58);g.add(seat);
+  }
+  const thermos=buildThermos(g,.43,.96,.42);thermos.scale.setScalar(.72);thermos.rotation.z=.08;storyRef.carThermos=thermos;
+  g.userData.wheels=wheels;return g;
 }
 // The forest beyond the canal, with the car, the chaser and the lamp that marks the starting point.
 function buildForest() {
@@ -2778,6 +2793,31 @@ function primoDialogue(){
   return{line:'Good. You listened to the wrong things first, which is how everyone arrives. Let me give you something to do with your hands while you decide what you came for.',choices:['Why must I dig a grave?','What are the candles for?','Take me somewhere quiet.'],replies:['The ground under the willow remembers the first name we lost. Dig it up, and you will understand why we never say it aloud.','Three flames on the altar, so the choir can see where to fall. Light them, and the house will stop asking you questions.','Get in the car. There is a quiet place in the forest. Nobody hears a car in the forest.'],actions:[()=>storyFlags.add('primo-task-dig'),()=>storyFlags.add('primo-task-candles'),()=>{storyFlags.add('car-invited');pendingCar=true;}]};
 }
 
+function startPinoCombineScene(){
+  if(storyFlags.has('pino-collapsed')||storyScene||gameEnded)return;
+  const pino=cultRoster.find(n=>n.name==='Pino');
+  if(!pino||pino.fate!=='present'){showToast('THE FIELD IS QUIET. THE MACHINE IS STILL WARM.');return;}
+  storyFlags.add('pino-watched');keys.clear();controls.unlock();dialogueOpen=false;
+  const old=Object.values(zones).find(v=>v.interactables.includes(pino));if(old){const ix=old.interactables.indexOf(pino);if(ix>=0)old.interactables.splice(ix,1);}
+  pino.fate='present';pino.object.visible=true;pino.object.position.set(-49,0,-34);pino.object.rotation.y=Math.PI/2;pino.walking=true;storyRef.pino=pino;
+  const machine=storyRef.combine;if(machine){machine.visible=true;machine.position.set(-42,0,-35);machine.rotation.y=-Math.PI/2;}
+  playerAnchor.position.set(-37,0,-31);
+  storyScene={type:'pino-combine',t:0,dur:15,i:0,collapse:false,sound:false,lines:[
+    [.7,'Pino: I know how to leave. I have known it for years.'],
+    [3.4,'Voice: He runs. The machine starts after him. No one calls it a hunt.'],
+    [6.7,'Tobia: I could shout. I could leave the path. I keep watching.'],
+    [10.6,'Voice: The image finishes first. The sound is late enough to make the fall look chosen.'],
+    [13.0,'Voice: The field will be planted again. The place where he fell will not be marked.']
+  ]};
+}
+function endPinoCombineScene(){
+  const pino=storyRef.pino;if(pino){pino.walking=false;pino.object.visible=false;pino.fate='dead';}
+  if(storyRef.combine)storyRef.combine.visible=true;
+  storyFlags.add('pino-collapsed');storyFlags.add('watched-collapse');
+  journal.push({id:'pino-collapse',title:'The field after Pino',description:'The combine kept moving after Pino stopped. The sound arrived late. You watched until the field became an image again, then called it an accident.',kind:'witness account',zone:'road'});updateJournalCount();updateMissions();
+  storyScene=null;playerAnchor.position.set(-37,0,-31);camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();audio?.setZone('road');
+  showToast('THE ENGINE HAS LEFT THE FIELD. THE FIELD HAS NOT FORGOTTEN.');
+}
 function storyLine(text) {
   const m = /^([^:]+):\s*/.exec(text);
   $('speaker').textContent = m ? m[1].toUpperCase() : 'VOICE';
@@ -2792,6 +2832,10 @@ function buildStory() {
   addIndustry(zones.road.group, -60, -62, 1);
   addIndustry(zones.home.group, 14, -44, .9);
   addIndustry(zones.abattoir.group, 44, 0, .9);
+  // A rusted combine rests in the wheat field, its header turned toward the road.
+  const combine=buildCombineHarvester(zones.road.group,-47,-39,.92);combine.visible=true;storyRef.combine=combine;
+  const pinoMarker=new THREE.Mesh(new THREE.SphereGeometry(.18,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pinoMarker.position.set(-43,.2,-31);zones.road.group.add(pinoMarker);
+  zones.road.interactables.push({id:'pino-combine-event',type:'event',object:pinoMarker,point:pinoMarker.position,radius:4.3,prompt:'[ E ] FOLLOW THE ENGINE',requiresFlag:'pino-sent',blockedHint:'Pino has not asked you to follow him into the field.',run:startPinoCombineScene});
   // The confessional: a booth in the church with a grille between the penitent and the priest.
   const booth = new THREE.Group(); booth.position.set(6.5, 0, -10); zones.church.group.add(booth);
   addBox(booth, 0, 1.1, 0, 1.4, 2.2, 1.2, mat(0x2e2016, .6));
