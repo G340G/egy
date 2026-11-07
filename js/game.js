@@ -2031,7 +2031,7 @@ function revealEndingChoices(){
   storyScene=null;$('subtitle-wrap').classList.remove('visible');$('ending-screen').classList.add('active');
   $('ending-title').textContent='The White Was Not Heard.';$('ending-copy').textContent='The turntable is still in the cellar. The forest has made a place the size of a person.';
   $('ending-small').textContent='THE THIRTEEN HAVE LEFT. WHAT YOU LEFT BEHIND REMAINS.';$('ending-choices').classList.add('visible');
-  $('ending-testimony').style.display=storyFlags.has('grave-revealed')?'':'none';$('ending-result').classList.remove('visible');
+  $('ending-testimony').style.display=(storyFlags.has('grave-revealed')&&storyFlags.has('pastorale-complete'))?'':'none';$('ending-result').classList.remove('visible');
 }
 
 function resolveEnding(choice) {
@@ -2047,6 +2047,8 @@ function resolveEnding(choice) {
   if(choice==='preserve' && storyFlags.has('crossed-impossible')) result.copy='The sewn threshold returned you to the same room, but from the opposite wall. You left the platter turning. When you leave, the door opens inward onto the room you have just left.';
   if(choice==='fill' && storyFlags.has('released')) result.copy += ' You cut the chains but freed nobody: the place was filled by a choice you can no longer withdraw.';
   if(choice==='expose' && storyFlags.has('complicit')) result.copy += ' You left the hooks untouched when you could have acted; the truth arrives, but it is not innocent.';
+  if(storyFlags.has('pastorale-complete'))result.copy += ' The Mass did not return. Its grief moved into the water, the grain and the reeds. No funeral was held; the landscape learned the interval instead.';
+  if(storyFlags.has('institution-survives'))result.copy += ' Ines remains at the house. The porch lamp is lit again. Someone is walking toward the door, and there is a place waiting for them.';
   $('ending-title').textContent=result.title;$('ending-copy').textContent=result.copy;$('ending-small').textContent=result.small;
   $('ending-choices').classList.remove('visible');$('ending-result').classList.add('visible');
   storyFlags.add(`ending-${choice}`);speakVoice(result.voice,'RECORDING 14-B');
@@ -2501,9 +2503,11 @@ const MISSIONS=[
  {id:'candles',text:'Light all three altar candles. The flames are part of the way forward.',when:()=>collected.size>=2,done:()=>storyFlags.has('altar-lit')},
  {id:'cemetery',text:'The First says the missing name is buried in the cemetery beside the industries.',when:()=>storyFlags.has('cemetery-bait'),done:()=>storyFlags.has('cemetery-shot')},
   {id:'pino-field',text:'Follow Pino into the wheat field. The combine is still running.',when:()=>storyFlags.has('pino-sent'),done:()=>storyFlags.has('pino-collapsed')},
-  {id:'bell-rope',text:'Hold Don Remo’s bell rope while Walter carries out the instruction given to Dario.',when:()=>storyFlags.has('heard-dario-plan')&&storyFlags.has('talked-remo'),done:()=>storyFlags.has('dario-bell-death')}
+  {id:'bell-rope',text:'Hold Don Remo’s bell rope while Walter carries out the instruction given to Dario.',when:()=>storyFlags.has('heard-dario-plan')&&storyFlags.has('talked-remo'),done:()=>storyFlags.has('dario-bell-death')},
+  {id:'pastorale',text:'After the forest, follow the waterline and recover three pastoral intervals.',when:()=>storyFlags.has('escaped-forest'),done:()=>storyFlags.has('pastorale-complete')}
 ];
 function currentMissionText(){
+ if(storyFlags.has('escaped-forest')&&!storyFlags.has('pastorale-complete')&&currentZone==='road')return 'FOLLOW THE WATERLINE. FIND THE THREE PASTORAL INTERVALS — '+['water','grain','reeds'].filter(k=>storyFlags.has('pastorale-'+k)).length+' / 3.';
  if(storyFlags.has('pino-sent')&&!storyFlags.has('pino-collapsed')&&currentZone==='road')return 'PINO WENT TOWARD THE WHEAT FIELD. FOLLOW THE ENGINE.';
   if(currentZone==='church'&&storyFlags.has('heard-dario-plan')&&storyFlags.has('talked-remo')&&!storyFlags.has('dario-bell-death'))return 'HOLD THE BELL ROPE. WALTER IS WAITING BEHIND DARIO.';
  if(currentZone==='darkroom'&&!storyFlags.has('darkroom-cleared'))return 'SEARCH THE DARK ROOM — '+darkroomFindCount()+' / 6. Keep the beam moving.';
@@ -2981,6 +2985,49 @@ function storyLine(text) {
   clearTimeout(storyLine.timer);
   storyLine.timer = setTimeout(() => { if (!dialogueOpen && !storyScene) $('subtitle-wrap').classList.remove('visible'); }, 4200);
 }
+function addPastoraleStation(zone,id,title,description,x,z,kind){
+  const root=new THREE.Group();root.position.set(x,0,z);zone.group.add(root);
+  const stone=mat(0x565349,.98,{map:TEX.concrete}),reedMat=mat(0x625e43,.96),wheatMat=mat(0x8e7950,.96),dark=mat(0x262923,.98);
+  if(kind==='water'){
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(.54,.018,5,36),new THREE.MeshStandardMaterial({color:0x9aa49a,roughness:.24,metalness:.2,transparent:true,opacity:.42}));ring.rotation.x=Math.PI/2;ring.position.y=.04;root.add(ring);
+    const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.32,1),stone);rock.scale.set(1.2,.42,.8);rock.position.set(.36,.12,.24);root.add(rock);
+    for(let i=0;i<9;i++){const a=i*2.399,reed=new THREE.Mesh(new THREE.CylinderGeometry(.012,.026,.72+(i%3)*.14,6),reedMat);reed.position.set(Math.cos(a)*(.35+(i%2)*.18),.36,Math.sin(a)*(.35+(i%2)*.18));reed.rotation.z=Math.cos(a)*.16;reed.rotation.x=Math.sin(a)*.12;root.add(reed);const blade=new THREE.Mesh(new THREE.ConeGeometry(.045,.42,5),reedMat);blade.position.set(reed.position.x+Math.cos(a)*.12,.76,reed.position.z+Math.sin(a)*.12);blade.rotation.z=-.16+Math.cos(a)*.2;root.add(blade);}
+  }else if(kind==='grain'){
+    const bundle=new THREE.Group();bundle.position.y=.02;root.add(bundle);
+    for(let i=0;i<11;i++){
+      const a=i*2.399,r=.06+(i%3)*.04,h=1.02+(i%4)*.12,xp=Math.cos(a)*r,zp=Math.sin(a)*r;
+      const stalk=new THREE.Mesh(new THREE.CylinderGeometry(.012,.018,h,6),wheatMat);stalk.position.set(xp,h/2,zp);stalk.rotation.z=Math.cos(a)*.08;bundle.add(stalk);
+      const head=new THREE.Mesh(new THREE.ConeGeometry(.055,.28,6),mat(0xa18b5a,.98));head.position.set(xp+Math.cos(a)*.035,h+.08,zp);head.rotation.z=-.2+Math.sin(a)*.12;bundle.add(head);
+      for(let k=0;k<3;k++){const awn=new THREE.Mesh(new THREE.CylinderGeometry(.003,.005,.16,4),wheatMat);awn.position.set(head.position.x+(k-1)*.035,h+.23,head.position.z);awn.rotation.z=(k-1)*.17;bundle.add(awn);}
+    }
+    const twine=new THREE.Mesh(new THREE.TorusGeometry(.14,.012,5,24),mat(0x5e4a31,.95));twine.position.y=.42;twine.rotation.x=Math.PI/2;bundle.add(twine);
+    const stoneBase=new THREE.Mesh(new THREE.DodecahedronGeometry(.27,1),stone);stoneBase.scale.set(1.2,.36,1);stoneBase.position.y=.05;root.add(stoneBase);
+  }else{
+    const branch=new THREE.Mesh(new THREE.CylinderGeometry(.018,.028,1.35,7),dark);branch.position.y=.63;branch.rotation.z=.22;root.add(branch);
+    for(let i=0;i<7;i++){const leaf=new THREE.Mesh(new THREE.PlaneGeometry(.13,.46),new THREE.MeshStandardMaterial({color:i%2?0x535d40:0x6d7050,roughness:1,side:THREE.DoubleSide}));leaf.position.set((i%2?-.15:.16),.28+i*.14,(i-3)*.035);leaf.rotation.set(.2,(i%2)*.45,(i-3)*.1);root.add(leaf);}
+    for(let i=0;i<4;i++){const pebble=new THREE.Mesh(new THREE.DodecahedronGeometry(.16,1),stone);pebble.scale.set(1,.38,.7);pebble.position.set(-.35+i*.22,.055,.18);root.add(pebble);}
+  }
+  const marker=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));marker.position.set(0,.58,0);root.add(marker);
+  const flag='pastorale-'+id;
+  zone.interactables.push({id:'pastorale-'+id,type:'story',object:marker,point:new THREE.Vector3(x,.58,z),radius:3.2,prompt:'[ E ] LISTEN TO THE LAND',requiresFlag:'escaped-forest',blockedHint:'The road is not ready to give this back to you.',run:()=>{
+    if(storyFlags.has(flag)){showToast('THIS INTERVAL HAS ALREADY BEEN KEPT.');return;}
+    storyFlags.add(flag);journal.push({id:flag,title,description,kind:'pastoral record',zone:'road'});updateJournalCount();
+    flashFragment(id==='water'?'room-tone':id==='grain'?'script':'collapse',125);
+    audio?.mechanicalTone(id==='water'?61:id==='grain'?73:49,id==='water'?29:id==='grain'?37:24,1.8,'sine',.025,0);
+    showToast('PASTORALE RECORDED // '+title.toUpperCase());
+    const all=['pastorale-water','pastorale-grain','pastorale-reeds'].every(v=>storyFlags.has(v));
+    if(all&&!storyFlags.has('pastorale-complete')){
+      storyFlags.add('pastorale-complete');
+      startMonologue([
+        'Voice: The Mass has become small enough to fit inside a field.',
+        'Tobia: Nobody is buried here. The water carries the interval; the grain carries the weight.',
+        'Voice: The landscape can mourn without asking the dead to return.'
+      ],19);
+    }
+    updateMissions();
+  }});
+  return root;
+}
 function buildStory() {
   addIndustry(zones.road.group, 56, -58, 1.1);
   addIndustry(zones.road.group, -60, -62, 1);
@@ -2990,6 +3037,10 @@ function buildStory() {
   const combine=buildCombineHarvester(zones.road.group,-47,-39,.92);combine.visible=true;storyRef.combine=combine;
   const pinoMarker=new THREE.Mesh(new THREE.SphereGeometry(.18,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pinoMarker.position.set(-43,.2,-31);zones.road.group.add(pinoMarker);
   zones.road.interactables.push({id:'pino-combine-event',type:'event',object:pinoMarker,point:pinoMarker.position,radius:4.3,prompt:'[ E ] FOLLOW THE ENGINE',requiresFlag:'pino-sent',blockedHint:'Pino has not asked you to follow him into the field.',run:startPinoCombineScene});
+  // After escaping the forest, mourning leaves the nave and enters the landscape.
+  addPastoraleStation(zones.road,'water','Water Interval','The paddy holds the church bell without reflecting the tower. You hear a low vibration under the water. There is no congregation here, only a sound the reeds can carry.',45,-42,'water');
+  addPastoraleStation(zones.road,'grain','Grain Interval','The stalks bend in one direction, then another. No wind reaches your face. The choir is not present; the interval remains in the field after the voices are gone.',-51,24,'grain');
+  addPastoraleStation(zones.road,'reeds','Reed Interval','The canal keeps the shape of a funeral procession but no bodies pass. The reeds bow and rise. No one is buried here. The landscape has inherited the work of mourning.',-31,-3,'reeds');
   // The confessional: a booth in the church with a grille between the penitent and the priest.
   const booth = new THREE.Group(); booth.position.set(6.5, 0, -10); zones.church.group.add(booth);
   addBox(booth, 0, 1.1, 0, 1.4, 2.2, 1.2, mat(0x2e2016, .6));
