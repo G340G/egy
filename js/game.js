@@ -827,6 +827,47 @@ function buildThermos(group,x,y,z){
   const handle=new THREE.Mesh(new THREE.TorusGeometry(.10,.018,7,18,Math.PI),steel);handle.position.set(.15,.56,0);handle.rotation.z=Math.PI/2;root.add(handle);
   const maker=new THREE.Mesh(new THREE.PlaneGeometry(.12,.10),new THREE.MeshBasicMaterial({map:makeLabelTexture('I / 13',256,128),transparent:true,side:THREE.DoubleSide}));maker.position.set(0,.39,.142);root.add(maker);return root;
 }
+function buildCombineHarvester(group,x,z,scale=1){
+  const root=new THREE.Group();root.position.set(x,0,z);root.scale.setScalar(scale);group.add(root);
+  const bodyMat=mat(0x594332,.76,{map:TEX.rust,bumpScale:.07}),trim=mat(0x302e27,.72,{metalness:.34}),glass=new THREE.MeshStandardMaterial({color:0x202b2b,roughness:.18,metalness:.08,transparent:true,opacity:.48,side:THREE.DoubleSide}),steel=mat(0x8d897d,.42,{metalness:.7});
+  const chassis=roundedHousing(2.05,.78,3.15,.22,bodyMat,.06);chassis.position.y=.9;root.add(chassis);
+  const engineHood=roundedHousing(1.7,.56,1.05,.20,bodyMat,.05);engineHood.position.set(0,1.42,-.91);root.add(engineHood);
+  const cab=roundedHousing(1.45,1.03,1.23,.16,glass,.04);cab.position.set(0,1.78,.34);root.add(cab);
+  const roof=roundedHousing(1.62,.13,1.43,.08,bodyMat,.03);roof.position.set(0,2.34,.34);root.add(roof);
+  const exhaust=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,.72,10),trim);exhaust.position.set(.62,2.12,-.82);root.add(exhaust);
+  const exhaustCap=new THREE.Mesh(new THREE.TorusGeometry(.05,.012,5,16),steel);exhaustCap.position.set(.62,2.48,-.82);exhaustCap.rotation.x=Math.PI/2;root.add(exhaustCap);
+  for(const side of [-1,1]){
+    const mirrorArm=new THREE.CylinderGeometry(.014,.018,.42,6);const arm=new THREE.Mesh(mirrorArm,steel);arm.position.set(side*.91,1.82,.55);arm.rotation.z=side*.24;root.add(arm);
+    const mirror=new THREE.Mesh(new THREE.BoxGeometry(.16,.22,.045),trim);mirror.position.set(side*1.02,1.99,.58);root.add(mirror);
+    for(const zz of [-1.12,1.05]){
+      const wheel=new THREE.Group();wheel.position.set(side*.99,.53,zz);root.add(wheel);
+      const tyre=new THREE.Mesh(new THREE.CylinderGeometry( .37,.37,.24,20),M.black);tyre.rotation.z=Math.PI/2;wheel.add(tyre);
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(.26,.035,7,24),steel);rim.rotation.y=Math.PI/2;wheel.add(rim);
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.26,16),trim);hub.rotation.z=Math.PI/2;wheel.add(hub);
+      for(let i=0;i<8;i++){const lug=new THREE.Mesh(new THREE.SphereGeometry(.018,6,5),steel);const a=i*Math.PI/4;lug.position.set(0,Math.cos(a)*.18,Math.sin(a)*.18);wheel.add(lug);}
+      (root.userData.wheels||(root.userData.wheels=[])).push(wheel);
+    }
+  }
+  // Header cutter, rotating reel and crop dividers.
+  const header=new THREE.Group();header.position.set(0,.52,2.02);root.add(header);root.userData.headerReel=header;
+  const beam=roundedHousing(2.75,.22,.25,.07,trim,.02);beam.position.set(0,0,.05);header.add(beam);
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,2.55,18),steel);shaft.rotation.z=Math.PI/2;shaft.position.set(0,.34,-.02);header.add(shaft);
+  for(let side of [-1,1]){
+    const dividerCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(side*1.18,0,.18),new THREE.Vector3(side*1.38,.34,.48),new THREE.Vector3(side*1.35,.72,.8)]);
+    header.add(new THREE.Mesh(new THREE.TubeGeometry(dividerCurve,14,.028,6,false),steel));
+  }
+  const reel=new THREE.Group();reel.position.set(0,.36,-.02);header.add(reel);root.userData.reel=reel;
+  for(let side of [-1,1]){
+    const hoop=new THREE.Mesh(new THREE.TorusGeometry(.43,.022,6,32),steel);hoop.position.x=side*1.05;reel.add(hoop);
+    for(let i=0;i<10;i++){const a=i*Math.PI/5,bar=tubeBetween(reel,[side*1.05,Math.cos(a)*.39,Math.sin(a)*.39],[side*1.05,Math.cos(a+Math.PI/5)*.39,Math.sin(a+Math.PI/5)*.39],.018,trim,6);bar.rotation.x=0;}
+  }
+  const cutter=new THREE.Mesh(new THREE.CylinderGeometry(.028,.028,2.85,8),steel);cutter.rotation.z=Math.PI/2;cutter.position.set(0,-.14,.19);header.add(cutter);
+  for(let i=0;i<25;i++){const tooth=new THREE.Mesh(new THREE.ConeGeometry(.035,.18,5),steel);tooth.position.set(-1.3+i*.108,-.25,.2);tooth.rotation.x=Math.PI;header.add(tooth);}
+  for(let side of [-1,1]){
+    const light=new THREE.Mesh(new THREE.SphereGeometry(.055,8,6),glow(0xb56c31,.55));light.position.set(side*.72,1.1,-1.54);root.add(light);
+  }
+  root.userData.body=chassis;return root;
+}
 function buildCRT(group,x,y,z){
   const root=new THREE.Group();root.position.set(x,y,z);group.add(root);
   const caseMat=mat(0x292720,.72,{map:TEX.wood,bumpScale:.025}),bezelMat=mat(0x5a5142,.65,{metalness:.22});
@@ -1377,13 +1418,13 @@ function buildCellar() {
   addWoodTable(z.group,0,-1.0,12.8,1.12,.70,71);
   addCandle(z.group, -2, .62, -1, true, false);
   addCandle(z.group, 2, .62, -1, true, false);
-  addLook(z.group, 0, 1.2, -4.2, 'La lampada', 'Una lampada di ferro sopra il piatto. È calda. Non dovrebbe esserlo, perché la corrente è staccata da tre giorni.');
+  addLook(z.group,0,1.2,-4.2,'The lamp','An iron lamp above the platter. It is warm. It should not be: the power has been cut for three days.');
   // The artificial sun: harsh light in an otherwise unlit room.
   addBox(z.group, 0, 3.15, -4.8, 1.1, .16, .55, M.warmLight);
   addLight(z.group, 0xffb451, 5.8, 15, 0, 2.95, -4.3, { shadow: true, decay: 1.45 });
   // Turntable and the blank acetate. No record audio exists in this game.
-  addBox(z.group, 0, .9, -2.2, 2.2, .9, 1.8, M.darkWood);
-  addBox(z.group, 0, 1.38, -2.2, 2.05, .1, 1.65, M.black);
+  const turntableCabinet=roundedHousing(2.18,.92,1.78,.14,M.darkWood,.05);turntableCabinet.position.set(0,.88,-2.2);z.group.add(turntableCabinet);
+  const plinthTop=roundedHousing(2.08,.065,1.66,.09,mat(0x24231f,.62,{metalness:.28}),.025);plinthTop.position.set(0,1.38,-2.2);z.group.add(plinthTop);
   const platter = new THREE.Mesh(new THREE.CylinderGeometry(.59, .59, .07, 48), M.metal); platter.position.set(0, 1.49, -2.2); z.group.add(platter);
   const disc = new THREE.Mesh(new THREE.CylinderGeometry(.51,.51,.018,64),mat(0x111210,.24,{metalness:.45}));disc.position.set(0,1.54,-2.2);z.group.add(disc);
   const voidGrowth=new THREE.Group();voidGrowth.visible=false;voidGrowth.scale.setScalar(.001);z.group.add(voidGrowth);storyRef.voidGrowth=voidGrowth;
@@ -1391,39 +1432,17 @@ function buildCellar() {
   for(let i=0;i<9;i++){const a=i/9*Math.PI*2;const curve=new THREE.CatmullRomCurve3([new THREE.Vector3(Math.cos(a)*.48,.035,-2.2+Math.sin(a)*.48),new THREE.Vector3(Math.cos(a)*1.35,.045,-2.2+Math.sin(a)*1.2),new THREE.Vector3(Math.cos(a)*3.1,.06,-2.2+Math.sin(a)*2.2),new THREE.Vector3(Math.cos(a)*5.9,.09,-2.2+Math.sin(a)*3.6)]);voidGrowth.add(new THREE.Mesh(new THREE.TubeGeometry(curve,30,.05,6,false),rootMat));}
   for(let i=0;i<34;i++){const a=i*2.399,r=1+(i%7)*.72;const leaf=new THREE.Mesh(new THREE.PlaneGeometry(.22+(i%3)*.07,.075),new THREE.MeshStandardMaterial({color:[0x596246,0x343f2d,0x77704d][i%3],roughness:1,side:THREE.DoubleSide,transparent:true,opacity:.92}));leaf.position.set(Math.cos(a)*r,.10+(i%4)*.05,-2.2+Math.sin(a)*r*.66);leaf.rotation.set(-.4,a,.1);voidGrowth.add(leaf);}
   const label = new THREE.Mesh(new THREE.CircleGeometry(.115, 32), mat(0xd1caba, .9)); label.rotation.x = -Math.PI / 2; label.position.set(0, 1.555, -2.2); z.group.add(label);
-  const arm = addBox(z.group, .72, 1.65, -2.0, .07, .05, .8, M.gold, { rotation: [0, 0, -.16] });
-  // A separate reel-to-reel deck: visible spools turn even though no tape is fitted.
-  const reelDeck=new THREE.Group();reelDeck.position.set(-6.15,0,-2.65);z.group.add(reelDeck);
-  addBox(reelDeck,0,.62,0,2.55,.92,.72,M.darkWood);
-  addBox(reelDeck,0,.73,.385,2.38,.53,.035,M.metal);
-  addBox(reelDeck,0,1.08,.405,2.28,.12,.045,M.black);
-  const meter=new THREE.Mesh(new THREE.PlaneGeometry(.52,.18),new THREE.MeshBasicMaterial({map:makeLabelTexture('03:17  /  REC',512,128),side:THREE.DoubleSide}));meter.position.set(0,1.08,.435);reelDeck.add(meter);
-  const reels=[];
-  for(const x of [-.72,.72]){
-    const spool=new THREE.Group();spool.position.set(x,1.47,.48);reelDeck.add(spool);
-    const flange=new THREE.Mesh(new THREE.CylinderGeometry(.36,.36,.09,40),M.metal);flange.rotation.x=Math.PI/2;spool.add(flange);
-    const rim=new THREE.Mesh(new THREE.TorusGeometry(.34,.035,8,40),M.gold);spool.add(rim);
-    const inner=new THREE.Mesh(new THREE.TorusGeometry(.22,.022,7,32),M.rust);spool.add(inner);
-    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.115,.115,.14,24),M.black);hub.rotation.x=Math.PI/2;spool.add(hub);
-    for(let i=0;i<8;i++){
-      const spoke=addBox(spool,0,0,.075,.045,.56,.035,M.rust,{castShadow:false});spoke.rotation.z=i*Math.PI/4;
-      const aperture=new THREE.Mesh(new THREE.CircleGeometry(.035,10),M.black);const a=i*Math.PI/4;aperture.position.set(Math.cos(a)*.245,Math.sin(a)*.245,.076);spool.add(aperture);
-    }
-    const noTape=new THREE.Mesh(new THREE.TorusGeometry(.405,.012,5,48),M.darkWood);spool.add(noTape);
-    reels.push(spool);rotatingMachines.push({mesh:spool,speed:x<0?.34:-.29});
-  }
-  const tapePath=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-.36,1.48,.47),new THREE.Vector3(-.13,1.33,.5),new THREE.Vector3(.08,1.33,.5),new THREE.Vector3(.36,1.48,.47)]),18,.018,5,false),M.black);reelDeck.add(tapePath);
-  for(let i=0;i<5;i++){const knob=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.075,12),M.gold);knob.rotation.x=Math.PI/2;knob.position.set(-.85+i*.42,.76,.43);reelDeck.add(knob);}
-  // Thirteen chairs, one turned towards the viewer.
-  for (let i = 0; i < 13; i++) {
-    const a = i / 13 * Math.PI * 2; const x = Math.cos(a) * 5.0; const zz = Math.sin(a) * 4.1 + .3;
-    const chair = new THREE.Group(); chair.position.set(x, 0, zz); chair.rotation.y = -a + Math.PI; z.group.add(chair);
-    addBox(chair, 0, .53, 0, .72, .12, .65, M.wood); addBox(chair, 0, 1.05, -.29, .72, 1.0, .12, M.darkWood);
-    addBox(chair, -.28, .25, 0, .08, .5, .08, M.darkWood); addBox(chair, .28, .25, 0, .08, .5, .08, M.darkWood);
-  }
+  const armBase=new THREE.Mesh(new THREE.CylinderGeometry(.09,.10,.09,18),M.gold);armBase.position.set(.77,1.49,-2.0);z.group.add(armBase);
+  const tonearmCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(.77,1.57,-2.0),new THREE.Vector3(.68,1.64,-2.05),new THREE.Vector3(.46,1.64,-2.12),new THREE.Vector3(.27,1.62,-2.25)]);z.group.add(new THREE.Mesh(new THREE.TubeGeometry(tonearmCurve,20,.025,7,false),M.gold));
+  const stylus=new THREE.Mesh(new THREE.ConeGeometry(.035,.12,7),M.rust);stylus.position.set(.27,1.57,-2.25);stylus.rotation.z=Math.PI;z.group.add(stylus);
+  // The 1970s transport keeps turning with no tape threaded through its guides.
+  const reelDeck=buildReelRecorder(z.group,-6.15,0,-2.65,.82);storyRef.cellarReelDeck=reelDeck;
+  // Thirteen individually turned chairs. Their empty places are part of the ritual.
+  for(let i=0;i<13;i++){const a=i/13*Math.PI*2,x=Math.cos(a)*5.0,zz=Math.sin(a)*4.1+.3;addWoodChair(z.group,x,zz,-a+Math.PI,.92+(i%3)*.025);}
+
   // A human outline that could be a coat on a hook.
-  const hanging = makeNPC(z.group, -7.0, -4.9, 'Il cappotto', 0x141614, 1); hanging.object.scale.set(.72, 1.12, .72); hanging.prompt = '[ E ] ESAMINA — IL CAPOTTO';
-  hanging.dialogue = { line: 'Le maniche sono ancora calde. Non c’è nessuno dentro.', choices: ['Chi lo ha lasciato?', 'Non toccarlo.'], replies: ['La persona che indossa i vestiti degli altri quando ha freddo.', 'È già stato toccato. Dal lato che non vedi.'] };
+  const hanging=makeNPC(z.group,-7.0,-4.9,'The Coat',0x141614,1);hanging.object.scale.set(.72,1.12,.72);hanging.prompt='[ E ] EXAMINE — THE COAT';
+  hanging.dialogue={line:'The sleeves are still warm. There is nobody inside.',choices:['Who left it here?','Do not touch it.'],replies:['The person who borrows other people’s clothes when he is cold.','It has already been touched. From the side you cannot see.']};
   addDoor(z.group, 0, 7.95, 'the stairs', 'home', [7.5, 0, -5.2]);
   const darkDoor=addDoor(z.group,8.25,0,'the dark room','darkroom',[0,0,9.3],true,{rotationY:Math.PI/2,style:'hatch'});darkDoor.requiresFlag='altar-lit';darkDoor.blockedHint='The three altar candles must be lit before the side door will open.';darkDoor.prompt='[ E ] ENTER THE DARK ROOM';
   const turntableEntry = { id: 'listen', type: 'listen', object: disc, point: disc.position, radius: 3.0, prompt: '[ E ] LISTEN TO THE WHITE', title: 'The White', requiresFlag:'darkroom-cleared', blockedHint:'The room has not been searched. Find what the recording contains before you listen.' };
