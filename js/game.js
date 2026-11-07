@@ -1317,10 +1317,10 @@ function buildChurch() {
   // Candles and red sanctuary light.
   for (let i = 0; i < 6; i++) { addBox(z.group, -2.1 + i * .85, 2.12, -11.3, .055, .58, .055, M.wood); addLight(z.group, 0xffa35b, .24, 3.2, -2.1 + i * .85, 2.55, -11.3); }
   addLight(z.group, 0x9d3026, 1.7, 12, 0, 4.1, -14.2);
-  const remo=makeNPC(z.group,1.5,-8.2,'Father Remo',0xddd7c9,1);
-  remo.dialogue={line:'The door is not closed. The room is on the other side. The altar is an instrument, and the candles are its keys.',choices:['What is on the record?','Why has the cross been turned around?'],replies:['A sound that does not need to be heard. A place that does not need to be inhabited.','The cross faces the road because the dead were never meant to stay here. Light all three altar candles. The room must be seen clearly before the record can be heard.']};
+  const remo=makeNPC(z.group,1.5,-8.2,'Don Remo',0xddd7c9,1);
+  remo.dialogue={line:'I was ordained to speak to a God who no longer answers. The collar remains. The gestures remain. A vocation can outlive the thing it serves.',choices:['Do you still believe?','What happened to the choir?'],replies:['Belief is not a light. It is a room you can keep entering after the lamps have gone out.','They were waiting for a sound. The heater stood in the corner. No one wrote it into the sermon. The report says nothing certain.']};
   const bellMarker=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.18),M.clue);bellMarker.position.set(-6.8,.12,-5.8);z.group.add(bellMarker);z.interactables.push({id:'bell_event',type:'event',object:bellMarker,point:bellMarker.position,radius:2.8,prompt:'[ E ] PULL THE BELL ROPE',run:()=>{audio?.bell();triggerKillScene();}});
-  addClueMesh(z.group,new THREE.Vector3(-5.8,1.7,-13.6),'Mass Register','The page lists a sequence of stations. The numbering jumps from the eleventh to the fourteenth. On the reverse: “no funeral.”','mass','paper',{requiresFlag:'talked-remo',blockedHint:'Speak with Father Remo before examining the Mass Register.'});
+  addClueMesh(z.group,new THREE.Vector3(-5.8,1.7,-13.6),'Mass Register','The page lists a sequence of stations. The numbering jumps from the eleventh to the fourteenth. On the reverse: “no funeral.”','mass','paper',{requiresFlag:'talked-remo',blockedHint:'Speak with Don Remo before examining the Mass Register.'});
   addDoor(z.group,0,11.9,'the churchyard','road',[0,0,-29],false,{style:'roman'});
   z.mist = addFog(z.group, 38, 36, 0xb7bcb8, 67);
   z.solids.push({ minX: -9, maxX: -8.7, minZ: -17, maxZ: 12 }, { minX: 8.7, maxX: 9, minZ: -17, maxZ: 12 }, { minX: -9, maxX: 9, minZ: -17.3, maxZ: -17 }, { minX: -9, maxX: -5, minZ: 11.7, maxZ: 12 }, { minX: 5, maxX: 9, minZ: 11.7, maxZ: 12 });
@@ -2428,7 +2428,7 @@ const MISSIONS=[
  {id:'shovel',text:'Find a shovel in the ruined house, beside the collapsed wall.',when:()=>storyFlags.has('talked-ines')&&storyFlags.has('talked-ottavio'),done:()=>tools.has('shovel')},
  {id:'grave',text:'Dig beneath the willow. Hold E until the earth gives way.',when:()=>tools.has('shovel'),done:()=>storyFlags.has('grave-revealed')},
  {id:'widow',text:'Question the Widow in the ruined house about the 1977 recording.',when:()=>storyFlags.has('grave-revealed'),done:()=>storyFlags.has('talked-widow')},
- {id:'remo',text:'Speak with Father Remo. Ask why the cross has been turned around.',when:()=>collected.size>=2,done:()=>storyFlags.has('talked-remo')},
+ {id:'remo',text:'Speak with Don Remo. Ask why the cross has been turned around.',when:()=>collected.size>=2,done:()=>storyFlags.has('talked-remo')},
  {id:'candles',text:'Light all three altar candles. The flames are part of the way forward.',when:()=>collected.size>=2,done:()=>storyFlags.has('altar-lit')},
  {id:'cemetery',text:'The First says the missing name is buried in the cemetery beside the industries.',when:()=>storyFlags.has('cemetery-bait'),done:()=>storyFlags.has('cemetery-shot')},
   {id:'pino-field',text:'Follow Pino into the wheat field. The combine is still running.',when:()=>storyFlags.has('pino-sent'),done:()=>storyFlags.has('pino-collapsed')}
@@ -2441,7 +2441,7 @@ function currentMissionText(){
   if(storyFlags.has('corrado-tea')&&!storyFlags.has('listened-to-white'))return currentZone==='cellar'?'RETURN TO THE BLANK PLATTER. THE ROOM HAS BEEN RECORDED.':'THE BLANK PLATTER IS WAITING IN THE CELLAR.';
  if(currentZone==='home'&&!storyFlags.has('talked-ines'))return 'Speak with Ines before examining the Seating List.';
  if(currentZone==='home'&&!storyFlags.has('talked-ottavio'))return 'Speak with Ottavio before examining the Tuning Fork.';
- if(currentZone==='church'&&!storyFlags.has('talked-remo'))return 'Speak with Father Remo before examining the Mass Register.';
+ if(currentZone==='church'&&!storyFlags.has('talked-remo'))return 'Speak with Don Remo before examining the Mass Register.';
  if(currentZone==='ruin'&&!storyFlags.has('talked-widow'))return 'Speak with the Widow before examining the Burned Photograph.';
  if(storyFlags.has('cemetery-bait')&&!storyFlags.has('cemetery-shot')&&collected.size<clueCount)return 'THE FIRST’S INSTRUCTION: Go to the cemetery beside the industries. Find the missing name.';
  if(collected.size===7)return currentZone==='abattoir'
