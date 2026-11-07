@@ -23,7 +23,7 @@ const CHOICE_EFFECTS = {
 };
 const camDir2 = new THREE.Vector3();
 let bokeh = null, zoomPulse = 0, presence = 0, presenceWarned = false, nearFlag = false, beatTimer = 0;
-let stalker = null, stalkerZone = null, stalkerStartDelay = 0, digEntry = null, digProgress = 0, digDone = false, candlesLit = 0;
+let stalker = null, stalkerZone = null, digEntry = null, digProgress = 0, digDone = false, candlesLit = 0;
 let narrationTimer = null, rightMouse = false;
 let darkroomHunt={active:false,elapsed:0,reappear:0,lastFlash:0,warning:0};
 const relics = new Set(), eggs = [];
@@ -2399,31 +2399,20 @@ function placeStalker(name) {
   const b = z.bounds, sp = z.spawn;
   const corners = [[b.minX + 1.2, b.minZ + 1.2], [b.maxX - 1.2, b.minZ + 1.2], [b.minX + 1.2, b.maxZ - 1.2], [b.maxX - 1.2, b.maxZ - 1.2]];
   corners.sort((p, q) => Math.hypot(q[0] - sp.x, q[1] - sp.z) - Math.hypot(p[0] - sp.x, p[1] - sp.z));
-  if(name==='abattoir') stalker.position.set(-9.2,0,-8.2);
-  else stalker.position.set(corners[0][0], 0, corners[0][1]);
-  stalker.visible = true; stalkerZone = name; presenceWarned = false; presence = 0; stalkerStartDelay = name === 'abattoir' ? 15 : 0;
+  stalker.position.set(corners[0][0], 0, corners[0][1]);
+  stalker.visible = true; stalkerZone = name; presenceWarned = false; presence = 0;
 }
 function updatePresence(dt, t) {
   const active = stalker && stalker.visible && stalkerZone === currentZone && gameStarted && !gameEnded && !listeningPending && !cultFateActive && !dialogueOpen && !journalOpen;
   if (!active) { presence = Math.max(0, presence - dt * .8); return; }
   const p = playerAnchor.position;
   const dx = stalker.position.x - p.x, dz = stalker.position.z - p.z, dist = Math.hypot(dx, dz) || .001;
-  const abattoirHunt = currentZone === 'abattoir';
-  if (abattoirHunt && stalkerStartDelay > 0) {
-    stalkerStartDelay = Math.max(0, stalkerStartDelay - dt);
-    stalker.rotation.y = Math.atan2(-dx, -dz);
-    presence = 0; nearFlag = false;
-    return;
-  }
   camera.getWorldDirection(camDir2);
   const fl = Math.hypot(camDir2.x, camDir2.z) || 1;
-  const watched = (camDir2.x * dx + camDir2.z * dz) / (fl * dist) > (abattoirHunt ? .80 : .55);
-  // In the slaughterhouse, looking at The First slows him but never freezes him.
-  // When unseen he can cross the room faster than the player's sprint.
-  if ((!watched || abattoirHunt) && dist > 1.1) {
-    const speed = abattoirHunt
-      ? (2.35 + presence * 1.45 + primoSpeedBonus() * 1.7) * (watched ? .70 : 1.42)
-      : (.7 + presence * .9 + primoSpeedBonus()) * 1.25;
+  const watched = (camDir2.x * dx + camDir2.z * dz) / (fl * dist) > .55;
+  // The First follows the same rule in every room: he advances only while unseen.
+  if (!watched && dist > 1.1) {
+    const speed = (.7 + presence * .9 + primoSpeedBonus()) * 1.25;
     const step = Math.min(dist - 1, speed * dt);
     stalker.position.x -= dx / dist * step; stalker.position.z -= dz / dist * step;
   }
@@ -2433,9 +2422,9 @@ function updatePresence(dt, t) {
   presence += (target - presence) * Math.min(1, dt * 1.6);
   if (presence > .5 && !nearFlag) { nearFlag = true; audio.stinger(1); glitchPulse = Math.max(glitchPulse, .8); }
   if (presence < .3) nearFlag = false;
-  if (dist < (abattoirHunt ? 4.8 : 2.9) && !presenceWarned) { presenceWarned = true; showToast('DO NOT TURN AROUND. HE IS NEAR. DO NOT WATCH HIM APPROACH.'); }
+  if (dist < 2.9 && !presenceWarned) { presenceWarned = true; showToast('DO NOT TURN AROUND. HE IS NEAR. DO NOT WATCH HIM APPROACH.'); }
   if (presence > .3) { beatTimer -= dt; if (beatTimer <= 0) { audio.knock(); beatTimer = 1.1 - presence * .6; } }
-  if (dist < (abattoirHunt ? 1.65 : 1.2)) triggerDeath('THE FIRST HAS FOUND YOU');
+  if (dist < 1.2) triggerDeath('THE FIRST HAS FOUND YOU');
 }
 // Missions: the first unfinished one whose prerequisites are met is shown in the objective panel.
 const MISSIONS=[
