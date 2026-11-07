@@ -25,6 +25,7 @@ const camDir2 = new THREE.Vector3();
 let bokeh = null, zoomPulse = 0, presence = 0, presenceWarned = false, nearFlag = false, beatTimer = 0;
 let stalker = null, stalkerZone = null, digEntry = null, digProgress = 0, digDone = false, candlesLit = 0;
 let narrationTimer = null, rightMouse = false;
+let darkroomHunt={active:false,elapsed:0,reappear:0,lastFlash:0,warning:0};
 const relics = new Set(), eggs = [];
 const storyRef = {}, rigs = [], emitters = [];
 let storyScene = null, pendingCar = false, chaseState = null, industryT = 0, SOFT_TEX = null;
@@ -768,6 +769,43 @@ function buildEarplugCase(group,x,y,z){
   for(let i=0;i<2;i++){const plug=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.095,4,8),wax);plug.scale.set(.8,1,.8);plug.position.set((i?-.05:.05),.31+i*.018,.02);plug.rotation.z=(i?-.22:.22);root.add(plug);}
   return root;
 }
+function buildReelRecorder(group,x,y,z,scale=1){
+  const root=new THREE.Group();root.position.set(x,y,z);root.scale.setScalar(scale);group.add(root);
+  const cabinet=mat(0x38352e,.62,{map:TEX.wood,bumpScale:.03}),panel=mat(0x6e716d,.38,{metalness:.58}),black=mat(0x171916,.66),steel=mat(0xaaa79b,.32,{metalness:.78}),red=glow(0xc13a28,.75);
+  const body=roundedHousing(2.52,.92,.82,.12,cabinet,.04);body.position.y=.53;root.add(body);
+  const face=roundedHousing(2.34,.57,.045,.065,panel,.025);face.position.set(0,.65,.432);root.add(face);
+  const top=roundedHousing(2.30,.12,.72,.055,cabinet,.025);top.position.set(0,1.03,0);root.add(top);
+  const meters=[];
+  for(const side of [-1,1]){
+    const housing=new THREE.Mesh(new THREE.BoxGeometry(.55,.27,.055),black);housing.position.set(side*.79,.78,.475);root.add(housing);
+    const screen=new THREE.Mesh(new THREE.PlaneGeometry(.46,.19),new THREE.MeshBasicMaterial({map:makeLabelTexture('VU  -20  -10  0  +3',512,128),color:0xb7b59f,side:THREE.DoubleSide}));screen.position.set(side*.79,.79,.507);root.add(screen);
+    const pivot=new THREE.Group();pivot.position.set(side*.79,.72,.519);root.add(pivot);
+    const needle=new THREE.Mesh(new THREE.BoxGeometry(.008,.115,.008),mat(0xc65b43,.45,{metalness:.3}));needle.position.y=.05;needle.rotation.z=.08;pivot.add(needle);meters.push(pivot);
+  }
+  const reels=[];
+  for(const side of [-1,1]){
+    const spool=new THREE.Group();spool.position.set(side*.69,1.48,.43);root.add(spool);
+    const flange=new THREE.Mesh(new THREE.CylinderGeometry(.39,.39,.075,48),steel);flange.rotation.x=Math.PI/2;spool.add(flange);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(.365,.026,7,40),mat(0x464640,.4,{metalness:.75}));spool.add(ring);
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.10,.10,.12,24),black);hub.rotation.x=Math.PI/2;spool.add(hub);
+    for(let i=0;i<6;i++){
+      const spoke=new THREE.Mesh(new THREE.BoxGeometry(.045,.55,.025),panel);spoke.position.z=.045;spoke.rotation.z=i*Math.PI/3;spool.add(spoke);
+      const a=i*Math.PI/3,aperture=new THREE.Mesh(new THREE.CircleGeometry(.035,10),black);aperture.position.set(Math.cos(a)*.245,Math.sin(a)*.245,.065);spool.add(aperture);
+    }
+    const cap=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.13,16),steel);cap.rotation.x=Math.PI/2;cap.position.z=.09;spool.add(cap);
+    reels.push(spool);rotatingMachines.push({mesh:spool,speed:side<0?.34:-.29});
+  }
+  for(const px of [-.30,.30]){const guide=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.28,10),steel);guide.position.set(px,1.13,.42);guide.rotation.z=.18;root.add(guide);}
+  const headBlock=roundedHousing(.40,.16,.13,.035,black,.012);headBlock.position.set(0,1.17,.42);root.add(headBlock);
+  [['STOP',-.82,0x5d5b54],['PLAY',-.42,0x4d5949],['REC',0,0x8b3026],['REW',.42,0x6b6757],['FWD',.82,0x6b6757]].forEach(([label,bx,col])=>{
+    const btn=new THREE.Mesh(new THREE.CylinderGeometry(.07,.075,.07,14),mat(col,.4,{metalness:.42}));btn.position.set(bx,.22,.45);root.add(btn);
+    const cap=new THREE.Mesh(new THREE.CylinderGeometry(.045,.05,.018,14),steel);cap.position.set(bx,.265,.45);root.add(cap);
+  });
+  const lamp=new THREE.Mesh(new THREE.SphereGeometry(.026,8,6),red);lamp.position.set(-.99,.49,.48);root.add(lamp);
+  const label=new THREE.Mesh(new THREE.PlaneGeometry(.72,.09),new THREE.MeshBasicMaterial({map:makeLabelTexture('STEREO / 19 CM-SEC',512,128),side:THREE.DoubleSide,transparent:true}));label.position.set(0,.48,.478);root.add(label);
+  const path=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-.29,1.48,.44),new THREE.Vector3(-.16,1.26,.45),new THREE.Vector3(0,1.25,.45),new THREE.Vector3(.16,1.26,.45),new THREE.Vector3(.29,1.48,.44)]),20,.012,5,false),steel);root.add(path);
+  root.userData.reels=reels;root.userData.meters=meters;root.userData.recordLamp=lamp;return root;
+}
 function buildPaperback(group,x,y,z){
   const root=new THREE.Group();root.position.set(x,y,z);root.rotation.set(-.06,.15,-.035);group.add(root);
   const pages=roundedHousing(.36,.48,.055,.025,mat(0xbeb39a,.98),.012);pages.position.z=-.008;root.add(pages);
@@ -1125,8 +1163,7 @@ function buildHome() {
   addBox(z.group, 7.9, 2.2, -8.66, 2.2, 1.8, .08, M.darkWood, { castShadow: false });
   addLight(z.group, 0xffac53, 3.2, 12, 7.9, 2.1, -7.4);
   // A television with no sound, a quiz show frozen on a question.
-  addBox(z.group, -1.2, 1.4, -8.2, 2.1, 1.55, .32, M.black);
-  const tv = new THREE.Mesh(new THREE.PlaneGeometry(1.75, 1.2), new THREE.MeshBasicMaterial({ map: makeLabelTexture('DOMANDA N. 14', 512, 256), color: 0xb3b1a7 })); tv.position.set(-1.2, 1.42, -8.02); z.group.add(tv);
+  buildCRT(z.group,-1.2,.05,-8.2);
   // The room is allowed to breathe: one wall text remains, not a slogan on every surface.
   addCandle(z.group,-5.2,.98,2.0,true);
   addLook(z.group, -4.2, 1.6, -8.1, 'Finestra nord', 'Oltre il vetro, nella nebbia, una fila di figure gira intorno a un fuoco. Una di loro pende da una trave, e il vento non la muove. Si muove solo quando la stanza respira.');
@@ -1511,9 +1548,9 @@ function enterZone(name, spawn) {
   velocity.set(0, 0, 0);
   scene.fog = zone.fog || new THREE.FogExp2(zone.fogColor, zone.density);
   scene.background.set(zone.fogColor);
-  $('location').textContent = ({ road: 'STRADA DELLE NEBBIE', home: 'CASA / TREDICI POSTI', church: 'CHIESA SCONSACRATA', ruin: 'CASA VUOTA', cellar: 'SOTTERRANEO / 14-B', abattoir: 'MACELLO / SALA DEL VUOTO', forest: 'BOSCO DEL CANALE' })[name];
-  glitchPulse = Math.max(glitchPulse, .42); audio?.stinger(.32); audio?.setZone(name); if(name==='abattoir'){fear=Math.min(1,fear+.19);audio?.mechanicalEvent('hoist');} if(name==='church' && collected.size>=2 && !scenePlayed) showToast('LA CORDA DELLA CAMPANA È UMIDA.'); if(name==='cellar'){fear=Math.min(1,fear+.18);}
-  showToast(({ road: 'LA STRADA NON È DOVE L’HAI LASCIATA', home: 'NESSUNO TI HA CHIESTO IL NOME', church: 'LA NAVATA È PIÙ LUNGA DALL’INTERNO', ruin: 'QUI QUALCUNO ASPETTA IL TELEFONO', cellar: 'LA STANZA HA TRATTENUTO IL CALDO', forest: 'IL BOSCO TIENE LA TUA POSIZIONE', abattoir: 'QUI LA CARNE HA UNA MEMORIA LUNGA' })[name]);
+  $('location').textContent = ({ road: 'FOG ROAD', home: 'THE HOUSE / THIRTEEN PLACES', church: 'THE DECONSECRATED CHURCH', ruin: 'THE EMPTY HOUSE', cellar: 'THE CELLAR / 14-B', darkroom: 'THE DARK ROOM / 14-B', abattoir: 'THE SLAUGHTERHOUSE / THE VOID ROOM', forest: 'THE CANAL FOREST' })[name];
+  glitchPulse = Math.max(glitchPulse, .42); audio?.stinger(.32); audio?.setZone(name); if(name==='abattoir'){fear=Math.min(1,fear+.19);audio?.mechanicalEvent('hoist');} if(name==='church' && collected.size>=2 && !scenePlayed) showToast('THE BELL ROPE IS WET.'); if(name==='cellar'||name==='darkroom'){fear=Math.min(1,fear+.18);} if(name==='darkroom'){darkroomHunt.active=!storyFlags.has('darkroom-cleared');if(!storyFlags.has('darkroom-entered')){storyFlags.add('darkroom-entered');darkroomHunt.elapsed=0;darkroomHunt.reappear=3.2;startMonologue(['Corrado: The lamp is not a weapon. It is a question you can only ask in one direction.','Voice: The room is full. You cannot see what it contains.','Corrado: Find what the tape cannot carry. Do not mistake being watched for being seen.'],13);}}
+  showToast(({ road: 'THE ROAD IS NOT WHERE YOU LEFT IT', home: 'NO ONE ASKED YOUR NAME', church: 'THE NAVE IS LONGER FROM THE INSIDE', ruin: 'SOMEONE IS WAITING BY THE TELEPHONE', cellar: 'THE ROOM HAS KEPT ITS HEAT', darkroom: 'THE DARK HAS BEEN ARRANGED BY HAND', forest: 'THE FOREST KEEPS YOUR POSITION', abattoir: 'HERE THE FLESH HAS A LONG MEMORY' })[name]);
   placeStalker(name); showChapterCard(name);
 }
 function currentPosition() { return playerAnchor.position; }
@@ -1801,6 +1838,7 @@ function renderJournal() {
   list.querySelector('.journal-entry')?.click();
 }
 function inspectTarget(item) {
+  if(item.requiresFlag&&!storyFlags.has(item.requiresFlag)){showToast(item.blockedHint||'The way is not open yet.');audio?.stinger(.22);return;}
   if (item.type === 'clue') { collectClue(item); return; }
   if (item.type === 'event') { if(item.used)return;item.used=true;const ix=zone.interactables.indexOf(item);if(ix>=0)zone.interactables.splice(ix,1);item.run?.();return; }
   if (item.type === 'npc') { openDialogue(item); return; }
@@ -1831,6 +1869,7 @@ function activateDoor(item){
 function beginListening(){
   if(collected.size<clueCount){showToast('THE PLATTER IS EMPTY. COLLECT ALL EIGHT CLUES.');return;}
   if(!storyFlags.has('altar-lit')){showToast('THE ALTAR IS STILL DARK. LIGHT ALL THREE CANDLES FIRST.');return;}
+  if(!storyFlags.has('darkroom-cleared')){showToast('THE DARK ROOM HAS NOT BEEN SEARCHED. FIND THE SIX RECORDS OF WHAT HAPPENED.');return;}
   if (listeningPending || gameEnded) return;
   // Lock the player inside the listening room. Every remaining cultist is brought
   // into view and receives a visible fate before the ending choices are revealed.
@@ -2332,6 +2371,9 @@ const MISSIONS=[
  {id:'cemetery',text:'The First says the missing name is buried in the cemetery beside the industries.',when:()=>storyFlags.has('cemetery-bait'),done:()=>storyFlags.has('cemetery-shot')}
 ];
 function currentMissionText(){
+ if(currentZone==='darkroom'&&!storyFlags.has('darkroom-cleared'))return 'SEARCH THE DARK ROOM — '+darkroomFindCount()+' / 6. Keep the beam moving.';
+ if(storyFlags.has('altar-lit')&&!storyFlags.has('darkroom-cleared'))return currentZone==='cellar'?'THE SIDE DOOR IS OPEN. SEARCH THE DARK ROOM FOR THE SIX RECORDS.':'RETURN TO THE CELLAR. THE SIDE DOOR HAS OPENED.';
+ if(storyFlags.has('darkroom-cleared')&&!storyFlags.has('listened-to-white'))return currentZone==='cellar'?'RETURN TO THE BLANK PLATTER. THE ROOM HAS BEEN RECORDED.':'THE BLANK PLATTER IS WAITING IN THE CELLAR.';
  if(currentZone==='home'&&!storyFlags.has('talked-ines'))return 'Speak with Ines before examining the Seating List.';
  if(currentZone==='home'&&!storyFlags.has('talked-ottavio'))return 'Speak with Ottavio before examining the Tuning Fork.';
  if(currentZone==='church'&&!storyFlags.has('talked-remo'))return 'Speak with Father Remo before examining the Mass Register.';
@@ -2384,7 +2426,7 @@ function applyConsequences(npc, index) {
   if (storyFlags.has('primo-alerted')) placeStalker(currentZone);
   updateMissions();
 }
-const CHAPTER_NAMES = { road: 'I · LA STRADA DELLE NEBBIE', home: 'II · LA CASA — TREDICI POSTI', church: 'III · LA CHIESA SCONSACRATA', ruin: 'IV · LA CASA VUOTA', cellar: 'V · IL SOTTERRANEO', abattoir: 'VI · IL MACELLO' };
+const CHAPTER_NAMES = { road: 'I · THE FOG ROAD', home: 'II · THE HOUSE / THIRTEEN PLACES', church: 'III · THE DECONSECRATED CHURCH', ruin: 'IV · THE EMPTY HOUSE', cellar: 'V · THE CELLAR', darkroom: 'VI · THE DARK ROOM', abattoir: 'VII · THE SLAUGHTERHOUSE' };
 function showChapterCard(name) {
   if (chapterCardsShown.has(name) || !CHAPTER_NAMES[name]) return;
   chapterCardsShown.add(name);
@@ -2833,7 +2875,7 @@ function escapeForest() {
   updateMissions();
 }
 function storyTick(dt, t) {
-  try { updatePorchPrimo(); updateAtmosphere(); updateEscalation(dt); updateCellarHunt(dt, t); updateCinematic(); } catch (err) { console.error('primo', err); }
+  try { updatePorchPrimo(); updateAtmosphere(); updateEscalation(dt); updateCellarHunt(dt, t); updateDarkroomHunt(dt,t); updateCinematic(); } catch (err) { console.error('primo', err); }
   try {
     updateEmitters(dt);
     updateIndustryNoise(dt);
