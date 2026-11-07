@@ -23,7 +23,7 @@ const CHOICE_EFFECTS = {
 };
 const camDir2 = new THREE.Vector3();
 let bokeh = null, zoomPulse = 0, presence = 0, presenceWarned = false, nearFlag = false, beatTimer = 0;
-let stalker = null, stalkerZone = null, digEntry = null, digProgress = 0, digDone = false, candlesLit = 0;
+let stalker = null, stalkerZone = null, stalkerStartDelay = 0, digEntry = null, digProgress = 0, digDone = false, candlesLit = 0;
 let narrationTimer = null, rightMouse = false;
 let darkroomHunt={active:false,elapsed:0,reappear:0,lastFlash:0,warning:0};
 const relics = new Set(), eggs = [];
@@ -1417,22 +1417,6 @@ function addHangingCarcass(group,x,z,phase=0) {
   for(let i=0;i<3;i++){const strip=new THREE.Mesh(new THREE.PlaneGeometry(.22,.86+Math.random()*.42),new THREE.MeshStandardMaterial({color:[0x513a34,0x755d51,0x302b27][i],transparent:true,opacity:.62,side:THREE.DoubleSide,roughness:1}));strip.position.set((i-1)*.31,1.35,.42);strip.rotation.z=(i-1)*.14;rig.add(strip);}
   rig.userData.hangPhase=phase;rig.userData.hanging=true;return rig;
 }
-function makeCollapseFilmTexture(){
-  const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
-  const bg=g.createLinearGradient(0,0,0,512);bg.addColorStop(0,'#c7bea7');bg.addColorStop(.42,'#968d7b');bg.addColorStop(1,'#554f45');g.fillStyle=bg;g.fillRect(0,0,1024,512);
-  const vignette=g.createRadialGradient(512,245,30,512,245,620);vignette.addColorStop(0,'rgba(245,239,218,.12)');vignette.addColorStop(1,'rgba(8,9,8,.78)');g.fillStyle=vignette;g.fillRect(0,0,1024,512);
-  g.fillStyle='rgba(15,16,14,.8)';g.fillRect(60,365,904,147);
-  g.strokeStyle='rgba(35,35,30,.46)';g.lineWidth=8;g.beginPath();g.moveTo(70,350);g.lineTo(954,350);g.stroke();
-  for(let i=0;i<13;i++){const x=92+i*70,y=346+(i%3)*4;g.fillStyle='rgba(15,17,15,.82)';g.beginPath();g.ellipse(x,y-88,19,25,(i%2?-.1:.08),0,Math.PI*2);g.fill();g.fillRect(x-20,y-64,40,72);g.fillRect(x-28,y-4,56,62);}
-  g.save();g.translate(515,330);g.rotate(-.48);g.fillStyle='#171915';g.beginPath();g.ellipse(0,-142,31,39,-.12,0,Math.PI*2);g.fill();
-  g.lineCap='round';g.lineWidth=42;g.strokeStyle='#191b17';g.beginPath();g.moveTo(0,-105);g.lineTo(-14,-10);g.lineTo(-98,56);g.moveTo(-12,-5);g.lineTo(82,48);g.stroke();
-  g.lineWidth=28;g.beginPath();g.moveTo(-14,-8);g.lineTo(-42,90);g.moveTo(-14,-8);g.lineTo(72,108);g.stroke();g.restore();
-  g.strokeStyle='rgba(23,22,19,.52)';g.lineWidth=3;g.beginPath();g.moveTo(500,40);g.lineTo(500,110);g.moveTo(520,40);g.lineTo(520,110);g.stroke();
-  for(let i=0;i<180;i++){const x=Math.random()*1024,y=Math.random()*512;g.fillStyle=Math.random()>.5?'rgba(15,15,13,.12)':'rgba(250,240,215,.12)';g.fillRect(x,y,1+Math.random()*3,1+Math.random()*2);}
-  for(let i=0;i<28;i++){const x=Math.random()*1024;g.strokeStyle='rgba(32,29,24,.18)';g.lineWidth=.6+Math.random()*1.3;g.beginPath();g.moveTo(x,Math.random()*80);g.lineTo(x+(Math.random()-.5)*12,512);g.stroke();}
-  g.fillStyle='rgba(19,18,16,.24)';for(let y=0;y<512;y+=7)g.fillRect(0,y,1024,1);
-  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.minFilter=THREE.LinearMipmapLinearFilter;tex.magFilter=THREE.LinearFilter;return tex;
-}
 function buildAbattoir() {
   const z=newZone('abattoir',0x282522,.049,{minX:-12,maxX:12,minZ:-10,maxZ:10},[0,0,7.0]);
   const floor=mat(0x403a32,1,{map:TEX.wood,bumpScale:.14});addBox(z.group,0,-.15,0,24,.3,20,floor);
@@ -1452,49 +1436,7 @@ function buildAbattoir() {
   // Meat rails and overhead hoists; carcasses are sculptural, not realistic gore.
   addBox(z.group,0,3.38,-1.6,19,.16,.18,M.rust);addBox(z.group,0,3.05,-1.6,19,.08,.08,M.metal);
   const carcasses=[];[-6.5,-2.2,2.2,6.5].forEach((x,i)=>carcasses.push(addHangingCarcass(z.group,x,-1.4,i*.7)));
-  // A brutalist red enclosure frames the central hanging form.
-  for(const x of [-3.0,3.0])addBox(z.group,x,2.05,-5.6,.16,4.1,.16,M.rust);
-  for(const y of [.25,3.9])addBox(z.group,0,y,-5.6,6,.16,.16,M.rust);
-  const redLight=addLight(z.group,0x8e241d,2.2,15,0,3.2,-5.4);redLight.castShadow=true;
   const overhead=addLight(z.group,0xe1d4b4,1.4,13,0,3.8,1.3);overhead.position.y=3.7;
-  for(let i=0;i<6;i++){const chain=new THREE.Mesh(new THREE.CylinderGeometry(.012,.016,.8,6),M.rust);chain.position.set(-8+i*3.2,3.35,3.3);z.group.add(chain);}
-  // A bedsheet, projector and a small audience turn the slaughterhouse into a private cinema.
-  const sheetGeo=new THREE.BufferGeometry(),sheetPos=[],sheetUv=[],sheetIdx=[];
-  for(let row=0;row<=9;row++)for(let col=0;col<=16;col++){
-    const u=col/16,v=row/9,x=(u-.5)*6.4,y=.25+v*3.25+Math.sin(u*Math.PI*3)*.11*(.35+v),zz=-9.52+Math.sin(u*Math.PI*5+v*2)*.035;
-    sheetPos.push(x,y,zz);sheetUv.push(u,v);
-  }
-  for(let row=0;row<9;row++)for(let col=0;col<16;col++){const a=row*17+col,b=a+1,c=a+17,d=c+1;sheetIdx.push(a,c,b,b,c,d);}
-  sheetGeo.setAttribute('position',new THREE.Float32BufferAttribute(sheetPos,3));sheetGeo.setAttribute('uv',new THREE.Float32BufferAttribute(sheetUv,2));sheetGeo.setIndex(sheetIdx);sheetGeo.computeVertexNormals();
-  const sheetMat=new THREE.MeshBasicMaterial({map:makeCollapseFilmTexture(),color:0xc5bda9,transparent:true,opacity:.30,side:THREE.DoubleSide,toneMapped:false});
-  const sheet=new THREE.Mesh(sheetGeo,sheetMat);z.group.add(sheet);storyRef.collapseScreen=sheet;
-  const sheetRod=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,6.8,8),M.rust);sheetRod.rotation.z=Math.PI/2;sheetRod.position.set(0,3.58,-9.5);z.group.add(sheetRod);
-  for(const x of [-3.0,3.0]){const rope=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.62,6),M.darkWood);rope.position.set(x,3.88,-9.5);z.group.add(rope);const hook=new THREE.Mesh(new THREE.TorusGeometry(.055,.012,5,12),M.rust);hook.position.set(x,3.52,-9.5);z.group.add(hook);}
-  const projector=new THREE.Group();projector.position.set(0,.02,3.3);z.group.add(projector);storyRef.collapseProjector=projector;
-  const projectorCase=roundedHousing(.82,.48,.58,.13,mat(0x4b483f,.58,{metalness:.46}),.04);projectorCase.position.y=.93;projector.add(projectorCase);
-  const projectorTop=roundedHousing(.68,.10,.48,.06,M.darkWood,.02);projectorTop.position.y=1.22;projector.add(projectorTop);
-  const lensTube=new THREE.Mesh(new THREE.CylinderGeometry(.105,.14,.36,20),M.metal);lensTube.rotation.x=Math.PI/2;lensTube.position.set(0,1.0,-.45);projector.add(lensTube);
-  const lensGlass=new THREE.Mesh(new THREE.CircleGeometry(.092,20),new THREE.MeshBasicMaterial({color:0xd6d0b6,transparent:true,opacity:.6}));lensGlass.position.set(0,1.0,-.64);projector.add(lensGlass);
-  for(const x of [-.23,.23]){
-    const reel=new THREE.Group();reel.position.set(x,1.38,-.04);projector.add(reel);
-    const flange=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.055,32),M.metal);flange.rotation.x=Math.PI/2;reel.add(flange);
-    const rim=new THREE.Mesh(new THREE.TorusGeometry(.22,.018,5,28),M.gold);reel.add(rim);
-    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.08,16),M.black);hub.rotation.x=Math.PI/2;reel.add(hub);
-    for(let k=0;k<6;k++){const spoke=new THREE.Mesh(new THREE.BoxGeometry(.025,.36,.018),M.rust);spoke.position.z=.033;spoke.rotation.z=k*Math.PI/3;reel.add(spoke);}
-    (storyRef.projectorReels||(storyRef.projectorReels=[])).push(reel);
-  }
-  const beamMat=new THREE.MeshBasicMaterial({color:0xbdbba7,transparent:true,opacity:.055,depthWrite:false,side:THREE.DoubleSide});
-  const beam=new THREE.Mesh(new THREE.ConeGeometry(2.15,12.8,24,1,true),beamMat);beam.rotation.x=-Math.PI/2;beam.position.set(0,1.0,-6.4);projector.add(beam);storyRef.projectorBeam=beam;
-  // Thirteen empty seats: the audience is absent. Only the hanging forms remain.
-  for(let row=0;row<2;row++){
-    const count=row===0?7:6,zz=5.75+row*2.25;
-    for(let i=0;i<count;i++){
-      const x=(i-(count-1)/2)*1.55,sc=.82+(i%3)*.035;
-      addWoodChair(z.group,x,zz,Math.PI,sc);
-    }
-  }
-  const screenMarker=new THREE.Mesh(new THREE.SphereGeometry(.14,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));screenMarker.position.set(0,.25,6.9);z.group.add(screenMarker);
-  z.interactables.push({id:'collapse-screening',type:'event',object:screenMarker,point:screenMarker.position,radius:3.1,prompt:'[ E ] TAKE YOUR SEAT',run:startCollapseScreening});
   // The room contains manifestos that contradict each other, by design.
   // The cult leader is hidden at the far end; his face is turned away until spoken to.
   const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI;if(leader.head)leader.head.material=headMaterial();leader.object.visible=false;storyRef.corrado=leader;leader.dialogue={line:'Man would rather will nothingness than not will. The room was not empty; we were taking up too much space.',choices:['Remove the tape.','Give me your place.'],replies:['There is no tape to remove. The machine turns without a reel.','The place is not mine. It is what remains when you give up your name.']};
@@ -1502,7 +1444,7 @@ function buildAbattoir() {
   z.interactables.push({id:'abattoir_ropes',type:'event',object:eventMarker,point:eventMarker.position,radius:3.0,prompt:'[ E ] CHOOSE WHAT TO DO WITH THE HOOKS',run:()=>{
     controls.unlock();dialogueOpen=true;$('speaker').textContent='THE ROOM / THE FOUR BODIES';$('subtitle').textContent='The chains are under tension. A voice comes from the floor: “If you free them, the room is left without witnesses. If you leave them, you become part of the inventory.” When you look again, one of the bodies has changed position.';speakVoice($('subtitle').textContent,'THE ROOM');$('subtitle-wrap').classList.add('visible');
     $('dialogue-options').innerHTML='';
-    [['CUT THE CHAINS','release'],['LEAVE EVERYTHING AS IT IS','keep']].forEach(([label,id])=>{const b=document.createElement('button');b.className='dialogue-option';b.textContent=label;b.onclick=()=>{storyFlags.add(id==='release'?'released':'complicit');if(id==='release'){carcasses[1].rotation.z=.8;carcasses[1].position.y=-.3;audio?.mechanicalEvent('hoist');fear=Math.min(1,fear+.2);scheduleCultSceneFates(2,'the chains','collapse');}else{carcasses[0].rotation.z=.42;storyFlags.add('leader-trust');scheduleCultSceneFates(2,'the silence of the hooks','vanish');}if('speechSynthesis'in window)window.speechSynthesis.cancel();$('subtitle-wrap').classList.remove('visible');dialogueOpen=false;glitchPulse=1.3;$('event-flash').classList.add('active');setTimeout(()=>$('event-flash').classList.remove('active'),220);controls.lock();showToast(id==='release'?'THE IRON IS FREE. THE BODIES ARE NOT.':'THE MACHINE KEEPS TURNING.');};$('dialogue-options').appendChild(b);});
+    [['CUT THE CHAINS','release'],['LEAVE EVERYTHING AS IT IS','keep']].forEach(([label,id])=>{const b=document.createElement('button');b.className='dialogue-option';b.textContent=label;b.onclick=()=>{storyFlags.add(id==='release'?'released':'complicit');storyFlags.add('carcasses-decided');if(id==='release'){carcasses[1].rotation.z=.8;carcasses[1].position.y=-.3;audio?.mechanicalEvent('hoist');fear=Math.min(1,fear+.2);scheduleCultSceneFates(2,'the chains','collapse');}else{carcasses[0].rotation.z=.42;storyFlags.add('leader-trust');scheduleCultSceneFates(2,'the silence of the hooks','vanish');}if('speechSynthesis'in window)window.speechSynthesis.cancel();$('subtitle-wrap').classList.remove('visible');dialogueOpen=false;glitchPulse=1.3;$('event-flash').classList.add('active');setTimeout(()=>$('event-flash').classList.remove('active'),220);controls.lock();showToast(id==='release'?'THE IRON IS FREE. THE BODIES ARE NOT.':'THE MACHINE KEEPS TURNING.');updateMissions();};$('dialogue-options').appendChild(b);});
   }});
   // A passage that returns the player to the same room from the wrong direction.
   const loopMarker=new THREE.Mesh(new THREE.BoxGeometry(.4,.12,.4),M.gold);loopMarker.position.set(-8,.1,6.8);z.group.add(loopMarker);
@@ -1984,7 +1926,7 @@ function beginListening(){
   if(!storyFlags.has('altar-lit')){showToast('THE ALTAR IS STILL DARK. LIGHT ALL THREE CANDLES FIRST.');return;}
   if(!storyFlags.has('darkroom-cleared')){showToast('THE DARK ROOM HAS NOT BEEN SEARCHED. FIND THE SIX RECORDS OF WHAT HAPPENED.');return;}
   if(!storyFlags.has('corrado-tea')){showToast('THE FIRST IS STILL IN THE SLAUGHTERHOUSE. ASK HIM ABOUT THE EARPLUGS.');return;}
-  if(!storyFlags.has('spectacle-seen')){showToast('YOU HAVE NOT TAKEN YOUR SEAT. WATCH THE SILENT REEL FIRST.');return;}
+  if(!storyFlags.has('carcasses-decided')){showToast('THE BODIES ARE STILL WAITING. DECIDE WHAT TO DO WITH THE HOOKS FIRST.');return;}
   storyFlags.add('listened-to-white');
   if (listeningPending || gameEnded) return;
   // Lock the player inside the listening room. Every remaining cultist is brought
@@ -2457,18 +2399,24 @@ function placeStalker(name) {
   const b = z.bounds, sp = z.spawn;
   const corners = [[b.minX + 1.2, b.minZ + 1.2], [b.maxX - 1.2, b.minZ + 1.2], [b.minX + 1.2, b.maxZ - 1.2], [b.maxX - 1.2, b.maxZ - 1.2]];
   corners.sort((p, q) => Math.hypot(q[0] - sp.x, q[1] - sp.z) - Math.hypot(p[0] - sp.x, p[1] - sp.z));
-  if(name==='abattoir') stalker.position.set(6.2,0,-4.2);
+  if(name==='abattoir') stalker.position.set(-9.2,0,-8.2);
   else stalker.position.set(corners[0][0], 0, corners[0][1]);
-  stalker.visible = true; stalkerZone = name; presenceWarned = false; presence = 0;
+  stalker.visible = true; stalkerZone = name; presenceWarned = false; presence = 0; stalkerStartDelay = name === 'abattoir' ? 15 : 0;
 }
 function updatePresence(dt, t) {
   const active = stalker && stalker.visible && stalkerZone === currentZone && gameStarted && !gameEnded && !listeningPending && !cultFateActive && !dialogueOpen && !journalOpen;
   if (!active) { presence = Math.max(0, presence - dt * .8); return; }
   const p = playerAnchor.position;
   const dx = stalker.position.x - p.x, dz = stalker.position.z - p.z, dist = Math.hypot(dx, dz) || .001;
+  const abattoirHunt = currentZone === 'abattoir';
+  if (abattoirHunt && stalkerStartDelay > 0) {
+    stalkerStartDelay = Math.max(0, stalkerStartDelay - dt);
+    stalker.rotation.y = Math.atan2(-dx, -dz);
+    presence = 0; nearFlag = false;
+    return;
+  }
   camera.getWorldDirection(camDir2);
   const fl = Math.hypot(camDir2.x, camDir2.z) || 1;
-  const abattoirHunt = currentZone === 'abattoir';
   const watched = (camDir2.x * dx + camDir2.z * dz) / (fl * dist) > (abattoirHunt ? .80 : .55);
   // In the slaughterhouse, looking at The First slows him but never freezes him.
   // When unseen he can cross the room faster than the player's sprint.
@@ -2503,13 +2451,13 @@ const MISSIONS=[
   {id:'pino-field',text:'Follow Pino into the wheat field. The combine is still running.',when:()=>storyFlags.has('pino-sent'),done:()=>storyFlags.has('pino-collapsed')},
   {id:'bell-rope',text:'Hold Don Remo’s bell rope while Walter carries out the instruction given to Dario.',when:()=>storyFlags.has('heard-dario-plan')&&storyFlags.has('talked-remo'),done:()=>storyFlags.has('dario-bell-death')},
   {id:'pastorale',text:'After the forest, follow the waterline and recover three pastoral intervals.',when:()=>storyFlags.has('escaped-forest'),done:()=>storyFlags.has('pastorale-complete')},
-  {id:'screening',text:'Take your seat. Watch the silent reel before you ask the platter to speak.',when:()=>currentZone==='abattoir',done:()=>storyFlags.has('spectacle-seen')}
+  {id:'carcasses',text:'Inspect the suspended carcasses. Decide whether to release them or leave them hanging.',when:()=>currentZone==='abattoir',done:()=>storyFlags.has('carcasses-decided')}
 ];
 function currentMissionText(){
  if(storyFlags.has('escaped-forest')&&!storyFlags.has('pastorale-complete')&&currentZone==='road')return 'FOLLOW THE WATERLINE. FIND THE THREE PASTORAL INTERVALS — '+['water','grain','reeds'].filter(k=>storyFlags.has('pastorale-'+k)).length+' / 3.';
  if(storyFlags.has('pino-sent')&&!storyFlags.has('pino-collapsed')&&currentZone==='road')return 'PINO WENT TOWARD THE WHEAT FIELD. FOLLOW THE ENGINE.';
   if(currentZone==='church'&&storyFlags.has('heard-dario-plan')&&storyFlags.has('talked-remo')&&!storyFlags.has('dario-bell-death'))return 'HOLD THE BELL ROPE. WALTER IS WAITING BEHIND DARIO.';
- if(currentZone==='abattoir'&&!storyFlags.has('spectacle-seen'))return 'TAKE YOUR SEAT. THE REEL IS SILENT, BUT THE SOUND WILL ARRIVE.';
+ if(currentZone==='abattoir'&&!storyFlags.has('carcasses-decided'))return 'DECIDE WHAT TO DO WITH THE HANGING BODIES.';
  if(currentZone==='darkroom'&&!storyFlags.has('darkroom-cleared'))return 'SEARCH THE DARK ROOM — '+darkroomFindCount()+' / 6. Keep the beam moving.';
  if(storyFlags.has('altar-lit')&&!storyFlags.has('darkroom-cleared'))return currentZone==='cellar'?'THE SIDE DOOR IS OPEN. SEARCH THE DARK ROOM FOR THE SIX RECORDS.':'RETURN TO THE CELLAR. THE SIDE DOOR HAS OPENED.';
  if(storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))return currentZone==='abattoir'?'SPEAK WITH THE FIRST AGAIN. ASK HIM ABOUT THE SOUND HE REFUSED TO HEAR.':'RETURN TO THE SLAUGHTERHOUSE. THE FIRST IS WAITING BESIDE THE HOOKS.';
@@ -2941,29 +2889,6 @@ function endCorradoTeaScene(){
   storyScene=null;dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
   showToast('THE FIRST IS GONE. THE HOUSE IS NOT EMPTY.');
 }
-function startCollapseScreening(){
-  if(storyFlags.has('spectacle-seen')||storyScene||gameEnded)return;
-  keys.clear();controls.unlock();dialogueOpen=false;
-  if(storyRef.collapseScreen?.material)storyRef.collapseScreen.material.opacity=.86;
-  if(storyRef.projectorBeam?.material)storyRef.projectorBeam.material.opacity=.13;
-  storyScene={type:'screening',t:0,dur:19.5,i:0,flashA:false,flashB:false,sound:false,lines:[
-    [.6,'Voice: A sheet, a projector, thirteen chairs. The room has built a cinema out of its own furniture.'],
-    [3.2,'Voice: The image arrives first. A body falls behind the white cloth.'],
-    [6.2,'Tobia: I am in the audience. I do not get up. A child claps before the body reaches the floor.'],
-    [9.0,'Voice: They used to cheer when something fell. The sound came later, and made the image belong to somebody.'],
-    [13.2,'Tobia: I know what I am watching. I keep watching.'],
-    [16.4,'Voice: There are no villains in the seats. Only people who came to see.']
-  ]};
-}
-function endCollapseScreening(){
-  storyFlags.add('spectacle-seen');storyFlags.add('complicit');
-  journal.push({id:'collapse-screening',title:'The Audience',description:'The family watched collapses on a bedsheet as if they were a match. The image came first; the sound arrived later. You remained seated until the reel stopped.',kind:'witness account',zone:'abattoir'});
-  updateJournalCount();updateMissions();storyScene=null;
-  if(storyRef.collapseScreen?.material)storyRef.collapseScreen.material.opacity=.32;
-  if(storyRef.projectorBeam?.material)storyRef.projectorBeam.material.opacity=.035;
-  camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
-  showToast('THE REEL HAS STOPPED. YOU ARE STILL IN YOUR SEAT.');
-}
 function startDarioEavesdrop(){
   if(storyFlags.has('heard-dario-plan')||storyScene||gameEnded)return;
   if(!storyFlags.has('talked-ines')||!storyFlags.has('talked-ottavio')){showToast('SPEAK WITH INES AND OTTAVIO FIRST.');return;}
@@ -3135,16 +3060,6 @@ function updateStoryScene(dt, t) {
       storyScene = null;
       if (!dialogueOpen) $('subtitle-wrap').classList.remove('visible');
     }
-  }
-  else if(s.type==='screening'){
-    camera.position.set(0,1.68,5.8);camera.lookAt(0,2.0,-9.45);
-    if(storyRef.projectorReels)storyRef.projectorReels.forEach((reel,i)=>{reel.rotation.z+=dt*(i===0?5.6:-4.9);});
-    if(storyRef.collapseScreen?.material)storyRef.collapseScreen.material.opacity=.80+Math.sin(s.t*21)*.055;
-    if(storyRef.projectorBeam?.material)storyRef.projectorBeam.material.opacity=.085+Math.sin(s.t*13)*.018;
-    if(s.t>=4.6&&!s.flashA){s.flashA=true;flashFragment('collapse',135);glitchPulse=Math.max(glitchPulse,.8);}
-    if(s.t>=8.2&&!s.flashB){s.flashB=true;flashFragment('nosebleed',125);glitchPulse=Math.max(glitchPulse,1.0);}
-    if(s.t>=11.5&&!s.sound){s.sound=true;audio?.mechanicalNoise(.28,380,.8,.12,0);audio?.mechanicalTone(92,35,1.6,'sawtooth',.075,0);}
-    if(s.t>=s.dur)endCollapseScreening();
   }
   else if(s.type==='dario-eavesdrop'){
     if(s.t>=8.8&&!s.flash){s.flash=true;flashFragment('collapse',125);audio?.mechanicalNoise(.18,380,.8,.09,0);}
