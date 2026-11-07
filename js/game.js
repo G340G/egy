@@ -289,8 +289,8 @@ function refreshPhotoNPC(npc){const key=npc.photoKey,image=PHOTO_IMAGES[key];if(
 function profileForNPC(name,variant){
  const n=(name||'').toLowerCase();
  if(['ines','anna','marta','vanda','ada','mirella','teresa','livia','woman by the canal','the widow','la donna','la vedova'].some(v=>n.includes(v)))return 'woman';
- if(n.includes('father remo')||n.includes('don remo')||n.includes('the first')||n.includes('il primo')||n.includes('dario')||n.includes('sergio')||n.includes('pino')||n.includes('franco')||n.includes('walter')||n.includes('gabri')||n.includes('elio'))return 'man';
- if(n.includes('ottavio')||n.includes('the coat')||n.includes('il cappotto'))return 'oldman';
+ if(n.includes('father remo')||n.includes('don remo')||n.includes('the first')||n.includes('the first')||n.includes('dario')||n.includes('sergio')||n.includes('pino')||n.includes('franco')||n.includes('walter')||n.includes('gabri')||n.includes('elio'))return 'man';
+ if(n.includes('ottavio')||n.includes('the coat')||n.includes('the coat'))return 'oldman';
  return variant===0?'woman':'oldman';
 }
 
@@ -391,7 +391,7 @@ function addClueMesh(group, pos, title, description, id, kind = 'paper', options
 function makeNPC(group,x,z,name,coatColor=0x272725,variant=0){
  const root=new THREE.Group();root.position.set(x,0,z);group.add(root);
  const lower=(name||'').toLowerCase(),profile=profileForNPC(name,variant);
- const female=profile==='woman',elder=profile==='oldman'||profile==='elder',first=lower==='the first'||lower==='il primo',isFirst=first;
+ const female=profile==='woman',elder=profile==='oldman'||profile==='elder',first=lower==='the first'||lower==='the first',isFirst=first;
  const skin=mat([0x88735f,0x9b826d,0x716052,0x8d7a68,0x6b5c51][(name||'').length%5],.96,{map:TEX.plaster,bumpScale:.022});
  const cloth=mat(coatColor,1,{map:TEX.wood,bumpScale:.045}),trim=mat(first?0x1d1b18:(variant===0?0x39352e:0x292b28),1,{map:TEX.wood});
  const hairColor=elder?0x77736b:(female?0x211c19:0x26221e),hair=mat(hairColor,1,{map:TEX.wood,bumpScale:.02});
@@ -2346,7 +2346,7 @@ function buildStoryExtras() {
   addTool(zones.ruin.group,4.2,-4.6,'shovel','Shovel','The handle is damp and smooth, as if many hands have gripped it in the dark.');
   syncDigSite();
 }
-// The approaching Il Primo: he walks toward you whenever you are not looking at him.
+// The approaching The First: he walks toward you whenever you are not looking at him.
 function stalkerEligible(name) {
   if (!['home', 'church', 'ruin', 'abattoir', 'cellar'].includes(name)) return false;
   if (storyFlags.has('porch-primo-gone') && (name === 'abattoir' || difficultyTier() >= 2)) return true;
@@ -2579,7 +2579,7 @@ function buildAtmosphere() {
 
 
 // =============================================================================
-// v3.4: smoke and fire, the industrial backdrop, relics as objects, Il Primo's
+// v3.4: smoke and fire, the industrial backdrop, relics as objects, The First's
 // double-faced dialogue, the confession, the drive into the forest and the chase.
 // =============================================================================
 function glow(color, intensity = 1) {
@@ -2791,7 +2791,7 @@ function buildForest() {
   storyRef.voidLeaves=[];
   for(let i=0;i<42;i++){const leaf=new THREE.Mesh(new THREE.PlaneGeometry(.18+(i%4)*.045,.055+(i%3)*.02),new THREE.MeshStandardMaterial({color:[0x5c6245,0x77714e,0x333d2d][i%3],roughness:1,transparent:true,opacity:.82,side:THREE.DoubleSide}));leaf.position.set(Math.cos(i*2.399)*(2.8+(i%3)),.18+(i%6)*.23,-29+Math.sin(i*2.399)*(2+(i%4)));leaf.userData={phase:i*2.399,radius:Math.hypot(leaf.position.x,leaf.position.z+29),height:leaf.position.y};g.add(leaf);storyRef.voidLeaves.push(leaf);}
 }
-// Il Primo: friendly on the surface, and every task he gives brings the new arrival closer to the void.
+// The First: friendly on the surface, and every task he gives brings the new arrival closer to the void.
 function primoDialogue(){
   const f=storyFlags;
   if(f.has('darkroom-cleared')&&!f.has('corrado-tea'))return{line:'You read the margins. Those numbers are not instructions for falling. They are the seconds I watched after each body stopped moving. You found the earplugs, too.',choices:['Why did you wear them?','Did you ever hear The White?'],replies:['I wanted the image without the sound. Sound makes a fall belong to someone. An image can be kept.','I heard the reels turn. I heard the room when the motor stopped. I never heard an album.'],actions:[()=>storyFlags.add('corrado-questioned'),()=>storyFlags.add('corrado-questioned')]};
@@ -2864,7 +2864,7 @@ function buildStory() {
   addBox(booth, 0, 1.45, .62, .9, .5, .05, mat(0x0a0908, .9));
   storyRef.hand = buildHand(); storyRef.hand.position.set(6.5, -1, -12.6); storyRef.hand.visible = false; zones.church.group.add(storyRef.hand);
   zones.church.interactables.push({ id: 'confession', type: 'story', object: booth, point: new THREE.Vector3(6.5, .9, -8.4), radius: 2.4, prompt: '[ E ] ENTER THE CONFESSIONAL', run: startConfession });
-  // Il Primo's dialogue is generated from the story so far.
+  // The First's dialogue is generated from the story so far.
   const primo = zones.abattoir.interactables.find(i => i.name === 'The First' || /primo/i.test(i.name || ''));
   if (primo) Object.defineProperty(primo, 'dialogue', { get: primoDialogue, configurable: true });
   buildForest();
@@ -2891,10 +2891,10 @@ function beginForestCar() {
   enterZone('forest', [0, 0, 0]);
   const car = storyRef.car; car.visible = true; car.position.set(0, 0, 0); car.rotation.y = 0;
   storyScene = { type: 'car', t: 0, dur: 17, i: 0, lines: [
-    [.8, 'Il Primo: Sit. Breathe on the glass and it fogs up, then it clears. Most things work like that.'],
-    [4.5, 'Il Primo: We drive a little. Nobody in the village listens to cars, and the forest does not repeat what it hears.'],
-    [9, 'Il Primo: You did well at the table. Most people never ask who taught them to stop asking.'],
-    [13.5, 'Il Primo: Get out now. Keep the lamp behind you.']] };
+    [.8, 'The First: Sit. Breathe on the glass and it fogs up, then it clears. Most things work like that.'],
+    [4.5, 'The First: We drive a little. Nobody in the village listens to cars, and the forest does not repeat what it hears.'],
+    [9, 'The First: You did well at the table. Most people never ask who taught them to stop asking.'],
+    [13.5, 'The First: Get out now. Keep the lamp behind you.']] };
 }
 function updateStoryScene(dt, t) {
   const s = storyScene; s.t += dt;
@@ -2981,7 +2981,7 @@ function updateChase(dt, t) {
   c.t += dt; c.next -= dt;
   if (c.next <= 0) {
     c.lunge = Math.random() < .35 ? 1.2 : 0; c.next = 2.5 + Math.random() * 3;
-    if (Math.random() < .35) storyLine(['Il Primo: Come back. The way is shorter from here.', 'Il Primo: You are walking away from the one warm place in the forest.', 'Il Primo: Listen. The forest is listening for your breath.'][(Math.random() * 3) | 0]);
+    if (Math.random() < .35) storyLine(['The First: Come back. The way is shorter from here.', 'The First: You are walking away from the one warm place in the forest.', 'The First: Listen. The forest is listening for your breath.'][(Math.random() * 3) | 0]);
   }
   const dx = p.x - ch.position.x, dz = p.z - ch.position.z, d = Math.hypot(dx, dz) || .001;
   camera.getWorldDirection(camDir2);
@@ -3151,7 +3151,7 @@ function startIntro() {
     [25, 'Voice: The house at the end of the road has waited a long time for someone who listens. I am only the one who did not leave.'],
     [31, 'Voice: Stay quiet. The fog is listening too, and it does not repeat what it hears.'],
     [37, 'Voice: The lamp is lit. Someone is holding the door open.'],
-    [40, 'Il Primo: Good evening. You found us. I kept the light on.']] };
+    [40, 'The First: Good evening. You found us. I kept the light on.']] };
 }
 function endIntro() {
   storyScene = null; $('intro-dark').style.opacity = '0';
@@ -3160,7 +3160,7 @@ function endIntro() {
 
 
 // =============================================================================
-// v3.6: Il Primo's face, his vanishing and return, difficulty, rewards and
+// v3.6: The First's face, his vanishing and return, difficulty, rewards and
 // penalties, one conversation per person, zone soundscapes and the finale.
 // =============================================================================
 // A face after Francis Bacon's Head VI (1949): a screaming head in a dark cage of brushed strokes.
@@ -3424,17 +3424,17 @@ function updatePorchPrimo() {
 
 
 // =============================================================================
-// v5: Il Primo's tiers and monologues, claustrophobic escalation, the cellar hunt
+// v5: The First's tiers and monologues, claustrophobic escalation, the cellar hunt
 // (the record is far away, and he laughs as he moves), cinematic bars, hidden details.
 // =============================================================================
 let escTier = 0;
 const PRIMO_TIER_LINES = {
-  1: ['Il Primo: I was not born empty. I was taught to listen until listening was the only thing I had left.', 'Il Primo: You have started counting the chairs. I did that too, in the same house, on the same night.'],
-  2: ['Il Primo: Every name you collect is a little less room for your own. I am not taking anything. I am making space.', 'Il Primo: Notice how quiet the rooms become when you stop answering them.'],
-  3: ['Il Primo: The fog is not outside the house. It is the house, breathing out a little more each time you come back.', 'Il Primo: I stopped hearing my own voice around the third winter. It was a relief. You will see.'],
-  4: ['Il Primo: Look behind you. You will not see me. That is the nature of a hollow thing: it is always just out of the frame.', 'Il Primo: The doors do not lock. They simply stop opening for people who are still full of themselves.'],
-  5: ['Il Primo: Do you know the worst part? I liked it when it took me. I had been so tired of being heard.', 'Il Primo: Soon the corridor will be the only way left, and it will be very warm.'],
-  6: ['Il Primo: Come down. The record is waiting, and so, a little, am I.', 'Il Primo: Listen. Can you hear the laugh? It is not mine. It is yours, coming back to you late.']
+  1: ['The First: I was not born empty. I was taught to listen until listening was the only thing I had left.', 'The First: You have started counting the chairs. I did that too, in the same house, on the same night.'],
+  2: ['The First: Every name you collect is a little less room for your own. I am not taking anything. I am making space.', 'The First: Notice how quiet the rooms become when you stop answering them.'],
+  3: ['The First: The fog is not outside the house. It is the house, breathing out a little more each time you come back.', 'The First: I stopped hearing my own voice around the third winter. It was a relief. You will see.'],
+  4: ['The First: Look behind you. You will not see me. That is the nature of a hollow thing: it is always just out of the frame.', 'The First: The doors do not lock. They simply stop opening for people who are still full of themselves.'],
+  5: ['The First: Do you know the worst part? I liked it when it took me. I had been so tired of being heard.', 'The First: Soon the corridor will be the only way left, and it will be very warm.'],
+  6: ['The First: Come down. The record is waiting, and so, a little, am I.', 'The First: Listen. Can you hear the laugh? It is not mine. It is yours, coming back to you late.']
 };
 function startMonologue(lines, dur = 16) {
   if (storyScene) return;
@@ -3476,7 +3476,7 @@ function updateCellarHunt(dt, t) {
   do { x = -7 + Math.random() * 14; z = -6 + Math.random() * 12; tries++; } while (Math.hypot(x - p.x, z - p.z) < 4 && tries < 20);
   stalker.position.set(x, 0, z);
   laugh();
-  storyLine('Il Primo: [laughs] You looked the wrong way again.');
+  storyLine('The First: [laughs] You looked the wrong way again.');
 }
 // Cinematic bars during scenes; they slide in and out.
 const LB = { top: document.createElement('div'), bottom: document.createElement('div') };
