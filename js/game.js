@@ -1264,7 +1264,7 @@ function buildHome() {
   const annaMarker=new THREE.Mesh(new THREE.BoxGeometry(.22,.08,.22),M.clue);annaMarker.position.set(-5.2,.12,1.2);z.group.add(annaMarker);
   z.interactables.push({id:'anna_scene_trigger',type:'event',object:annaMarker,point:annaMarker.position,radius:3.2,prompt:'[ E ] LOOK AT THE EMPTY PLACE',run:()=>triggerAnnaScene(z,annaMarker)});
   const wallEar=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));wallEar.position.set(-9.25,.2,-4.9);z.group.add(wallEar);
-  z.interactables.push({id:'dario-wall-listen',type:'event',object:wallEar,point:wallEar.position,radius:2.8,prompt:'[ E ] LISTEN THROUGH THE WALL',requiresFlag:'talked-ines',blockedHint:'First, speak with Ines and Ottavio.',run:startDarioEavesdrop});
+  z.interactables.push({id:'dario-wall-listen',type:'event',object:wallEar,point:wallEar.position,radius:2.8,prompt:'[ E ] LISTEN THROUGH THE WALL',requiresFlags:['talked-ines','talked-ottavio'],blockedHint:'First, speak with Ines and Ottavio.',run:startDarioEavesdrop});
   // Evidence in plain sight, once you stop looking for the album.
   addClueMesh(z.group,new THREE.Vector3(-5.2,1.1,2.0),'Seating List','A list of thirteen names. Beneath them, a fourteenth line has been erased so forcefully that it has scored the paper.','list','paper',{requiresFlag:'talked-ines',blockedHint:'Speak with Ines before examining the seating list.'});
   addClueMesh(z.group,new THREE.Vector3(5.8,1.45,-5.0),'Tuning Fork','A tuning fork. A=415 is engraved on the handle. The note does not match the one in your head.','fork','metal',{requiresFlag:'talked-ottavio',blockedHint:'Speak with Ottavio before examining the tuning fork.'});
@@ -1898,6 +1898,7 @@ function renderJournal() {
 }
 function inspectTarget(item) {
   if(item.requiresFlag&&!storyFlags.has(item.requiresFlag)){showToast(item.blockedHint||'The way is not open yet.');audio?.stinger(.22);return;}
+  if(item.requiresFlags&&!item.requiresFlags.every(flag=>storyFlags.has(flag))){showToast(item.blockedHint||'The way is not open yet.');audio?.stinger(.22);return;}
   if (item.type === 'clue') { collectClue(item); return; }
   if (item.type === 'event') { if(item.used)return;item.used=true;const ix=zone.interactables.indexOf(item);if(ix>=0)zone.interactables.splice(ix,1);item.run?.();return; }
   if (item.type === 'npc') { openDialogue(item); return; }
