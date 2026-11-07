@@ -965,8 +965,8 @@ function triggerKillScene() {
   scenePlayed=true;
   const z=zones.church;
   // Never create replacement extras: Walter and Dario are two of the thirteen.
-  const victim=cultRoster.find(n=>n.name==='Walter'&&['present','queued'].includes(n.fate));
-  const executioner=cultRoster.find(n=>n.name==='Dario'&&['present','queued'].includes(n.fate));
+  const victim=cultRoster.find(n=>n.name==='Dario'&&['present','queued'].includes(n.fate));
+  const executioner=cultRoster.find(n=>n.name==='Walter'&&['present','queued'].includes(n.fate));
   if(!victim || !executioner){
     storyFlags.add('empty-choir');
     audio?.mechanicalEvent('bell');
@@ -1250,7 +1250,7 @@ function buildHome() {
   anna.object.position.set(-5.2,0,1.2);anna.point=anna.object.position;
   buildSoupBowl(z.group,-5.18,.84,1.23);const trowel=buildTrowel(z.group,-4.55,.82,1.18);trowel.rotation.z=1.18;
   addLook(z.group,-4.85,1.05,1.5,'The soup over the trowel','A bowl of soup sits over a mason’s trowel. You eat while the tool that could disturb a grave lies beneath the tableware. The broth is warm. The handle is wet.');
-  const dario=addCultist(z,-8.0,-6.1,'Dario',0x302d28,1,'I believe in The White. I believe in it more than anyone in this house. That is why they avoid looking at me.',['Who leads the rite?','Why do they fear your belief?'],['There is no leader. Only a man who knows where to stand.','Because they are performing an emptiness they do not possess. I am not performing.']);dario.isLeader=true;
+  const dario=addCultist(z,-8.0,-6.1,'Dario',0x302d28,1,'I believe in The White. I believe in it more than anyone in this house. That is why they avoid looking at me.',['Who leads the rite?','You believe too much.'],['There is no leader. Only a man who knows where to stand.','That is what they say. I would rather be hated for believing than loved for pretending.']);dario.isLeader=true;
   const sergio=addCultist(z,-.8,-6.5,'Sergio',0x4a443a,0,'I stopped believing years ago. I stayed for the company. There was nowhere else to eat in peace.',['Then why not leave?','Did you know what happened in 1977?'],['Loneliness is a door that opens inward. You can walk through it and still be in the same room.','I heard the plan for Dario through the wall. I did not tell him. That is when I belonged here.']);
   addCultist(z,7.9,-6.2,'Marta',0x51483d,0,'I engrave my memoirs with a sunshine that was never there. The gold in the photograph is a lie. I remember the colour, not the day.',['Which memory is true?','Why do you keep writing?'],['The one that hurts the least is usually the one I invented.','If I stop, the memories begin to move without me.']);
   const pino=addCultist(z,8.05,.4,'Pino',0x3d423d,1,'I know how to leave. I know the road, the ditch and the combine. I have been waiting for a reason to run.',['Show me the field path.','Do not go.'],['When the machine starts, do not watch the blades. Watch the man who told you it was only work.','You can ask me to stay. You cannot make the road forget me.']);pino.isRunner=true;
@@ -1285,6 +1285,32 @@ function buildHome() {
   z.solids.push({ minX: 4.65, maxX: 4.95, minZ: -6, maxZ: -1 });
   return z;
 }
+function buildChurchBell(group,x,y,z){
+  const root=new THREE.Group();root.position.set(x,y,z);group.add(root);
+  const bronze=mat(0x77634a,.28,{metalness:.82}),worn=mat(0x9b8b70,.36,{metalness:.76}),wood=mat(0x34291f,.92,{map:TEX.wood});
+  const yoke=roundedHousing(.92,.16,.26,.08,wood,.025);yoke.position.y=1.65;root.add(yoke);
+  for(const side of [-1,1]){const pin=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.14,12),worn);pin.rotation.z=Math.PI/2;pin.position.set(side*.43,1.64,0);root.add(pin);}
+  const profile=[new THREE.Vector2(.31,0),new THREE.Vector2(.30,.055),new THREE.Vector2(.275,.12),new THREE.Vector2(.235,.22),new THREE.Vector2(.185,.34),new THREE.Vector2(.145,.48),new THREE.Vector2(.115,.60),new THREE.Vector2(.10,.66)];
+  const shell=new THREE.Mesh(new THREE.LatheGeometry(profile,32),bronze);shell.position.y=.76;root.add(shell);
+  const lip=new THREE.Mesh(new THREE.TorusGeometry(.31,.025,8,36),worn);lip.rotation.x=Math.PI/2;lip.position.y=.76;root.add(lip);
+  const shoulder=new THREE.Mesh(new THREE.TorusGeometry(.12,.018,6,20),worn);shoulder.rotation.x=Math.PI/2;shoulder.position.y=1.41;root.add(shoulder);
+  const crown=new THREE.Mesh(new THREE.CylinderGeometry(.11,.13,.12,14),bronze);crown.position.y=1.45;root.add(crown);
+  const clapper=new THREE.Group();clapper.position.set(0,1.22,0);root.add(clapper);
+  const rod=new THREE.Mesh(new THREE.CylinderGeometry(.018,.022,.54,8),worn);rod.position.y=-.25;clapper.add(rod);
+  const ball=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),worn);ball.position.y=-.54;clapper.add(ball);
+  const ropeCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,.94,0),new THREE.Vector3(.025,.58,.025),new THREE.Vector3(-.035,.28,.04),new THREE.Vector3(.04,-.12,.055),new THREE.Vector3(.015,-.58,.04),new THREE.Vector3(.06,-1.22,.08)]);
+  const rope=new THREE.Mesh(new THREE.TubeGeometry(ropeCurve,28,.024,7,false),mat(0x72583d,.98,{map:TEX.wood}));root.add(rope);
+  const knot=new THREE.Mesh(new THREE.SphereGeometry(.055,8,6),wood);knot.position.set(.06,-1.22,.08);root.add(knot);
+  const grip=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.19,10),wood);grip.position.set(.06,-1.36,.08);grip.rotation.z=-.08;root.add(grip);
+  root.userData={shell,clapper,rope,elapsed:0,ringing:false};return root;
+}
+function updateChurchBell(dt){
+  const rig=storyRef.churchBell;if(!rig?.userData?.ringing)return;
+  const u=rig.userData;u.elapsed+=dt;const decay=Math.exp(-u.elapsed*.62);
+  u.shell.rotation.z=Math.sin(u.elapsed*8.8)*.115*decay;
+  u.clapper.rotation.z=Math.sin(u.elapsed*10.6+.8)*.23*decay;
+  if(u.elapsed>5){u.ringing=false;u.shell.rotation.z=0;u.clapper.rotation.z=0;}
+}
 function buildChurch() {
   const z = newZone('church', 0x222522, .042, { minX: -9, maxX: 9, minZ: -17, maxZ: 12 }, [0, 0, 9.2]);
   addBox(z.group, 0, -.14, -2, 18, .28, 30, M.darkWood);
@@ -1318,7 +1344,9 @@ function buildChurch() {
   for (let i = 0; i < 6; i++) { addBox(z.group, -2.1 + i * .85, 2.12, -11.3, .055, .58, .055, M.wood); addLight(z.group, 0xffa35b, .24, 3.2, -2.1 + i * .85, 2.55, -11.3); }
   addLight(z.group, 0x9d3026, 1.7, 12, 0, 4.1, -14.2);
   const remo=makeNPC(z.group,1.5,-8.2,'Don Remo',0xddd7c9,1);
-  remo.dialogue={line:'I was ordained to speak to a God who no longer answers. The collar remains. The gestures remain. A vocation can outlive the thing it serves.',choices:['Do you still believe?','What happened to the choir?'],replies:['Belief is not a light. It is a room you can keep entering after the lamps have gone out.','They were waiting for a sound. The heater stood in the corner. No one wrote it into the sermon. The report says nothing certain.']};
+  remo.dialogue={line:'I was ordained to speak for someone who no longer answers. I keep saying the words because I no longer know where to put my hands. The collar remains; the addressee does not.',choices:['If God is dead, why keep the collar?','Did the choir know about the heater?'],replies:['A vocation can outlive the thing it serves. The collar is a habit, the bell is a task, and the altar still needs a hand.','I remember the heater. I remember a window latch. The report says the cause was undetermined. I have never corrected it.']};
+  const bellRig=buildChurchBell(z.group,-6.8,2.0,-5.8);storyRef.churchBell=bellRig;
+  z.interactables.push({id:'bell_event',type:'event',object:bellRig,point:new THREE.Vector3(-6.74,1.14,-5.72),radius:2.8,prompt:'[ E ] HOLD THE BELL ROPE',requiresFlags:['talked-remo','heard-dario-plan'],blockedHint:'Speak with Don Remo, then listen through the wall in the farmhouse.',run:()=>{storyFlags.add('held-bell-rope');bellRig.userData.ringing=true;bellRig.userData.elapsed=0;audio?.bell();triggerKillScene();}});
   const bellMarker=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.18),M.clue);bellMarker.position.set(-6.8,.12,-5.8);z.group.add(bellMarker);z.interactables.push({id:'bell_event',type:'event',object:bellMarker,point:bellMarker.position,radius:2.8,prompt:'[ E ] PULL THE BELL ROPE',run:()=>{audio?.bell();triggerKillScene();}});
   addClueMesh(z.group,new THREE.Vector3(-5.8,1.7,-13.6),'Mass Register','The page lists a sequence of stations. The numbering jumps from the eleventh to the fourteenth. On the reverse: “no funeral.”','mass','paper',{requiresFlag:'talked-remo',blockedHint:'Speak with Don Remo before examining the Mass Register.'});
   addDoor(z.group,0,11.9,'the churchyard','road',[0,0,-29],false,{style:'roman'});
@@ -1449,7 +1477,7 @@ function buildAbattoir() {
   z.interactables.push({id:'collapse-screening',type:'event',object:screenMarker,point:screenMarker.position,radius:3.1,prompt:'[ E ] TAKE YOUR SEAT',run:startCollapseScreening});
   // The room contains manifestos that contradict each other, by design.
   // The cult leader is hidden at the far end; his face is turned away until spoken to.
-  const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI; if (leader.head) leader.head.material = headMaterial();leader.dialogue={line:'I am not the leader. I am the first to understand that the room was not empty: we were taking up too much space.',choices:['Remove the tape.','Give me your place.'],replies:['There is no tape to remove. The machine turns without a reel.','The place is not mine. It is what remains when you give up your name.']};
+  const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI;if(leader.head)leader.head.material=headMaterial();storyRef.corrado=leader;leader.dialogue={line:'Man would rather will nothingness than not will. The room was not empty; we were taking up too much space.',choices:['Remove the tape.','Give me your place.'],replies:['There is no tape to remove. The machine turns without a reel.','The place is not mine. It is what remains when you give up your name.']};
   const eventMarker=new THREE.Mesh(new THREE.BoxGeometry(.34,.14,.34),M.clue);eventMarker.position.set(0,.12,1.7);z.group.add(eventMarker);
   z.interactables.push({id:'abattoir_ropes',type:'event',object:eventMarker,point:eventMarker.position,radius:3.0,prompt:'[ E ] CHOOSE WHAT TO DO WITH THE HOOKS',run:()=>{
     controls.unlock();dialogueOpen=true;$('speaker').textContent='THE ROOM / THE FOUR BODIES';$('subtitle').textContent='The chains are under tension. A voice comes from the floor: “If you free them, the room is left without witnesses. If you leave them, you become part of the inventory.” When you look again, one of the bodies has changed position.';speakVoice($('subtitle').textContent,'THE ROOM');$('subtitle-wrap').classList.add('visible');
@@ -2527,7 +2555,7 @@ function applyConsequences(npc, index) {
   if (key === 'the first' && npc.isOpeningPrimo) { storyFlags.add('met-primo'); storyFlags.add('primo-first-contact'); }
   else if (key === 'the first') { const d = primoDialogue(); d.actions?.[index]?.(); }
   applyChoiceEffect(key,index,npc);
-  if(key==='the first'&&storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))startCorradoTeaScene(npc);
+  if(key==='the first'&&npc===storyRef.corrado&&storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))startCorradoTeaScene(npc);
   if (storyFlags.has('primo-alerted')) placeStalker(currentZone);
   updateMissions();
 }
@@ -2876,7 +2904,7 @@ function buildTeacup(group,x,y,z){
   const saucer=new THREE.Mesh(new THREE.TorusGeometry(.19,.025,6,24),porcelain);saucer.rotation.x=Math.PI/2;saucer.position.y=.02;root.add(saucer);return root;
 }
 function startCorradoTeaScene(primo){
-  if(storyFlags.has('corrado-tea')||storyScene||gameEnded)return;
+  if(primo!==storyRef.corrado||storyFlags.has('corrado-tea')||storyScene||gameEnded)return;
   const ines=cultRoster.find(n=>n.name==='Ines');
   if(!ines||ines.fate!=='present'){triggerDeath('THE TEA NEVER CAME','Ines was no longer there to pour it. The room had lost the one person who knew how to make an ending gentle.');return;}
   storyFlags.add('corrado-tea-started');keys.clear();controls.unlock();dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');
@@ -3147,7 +3175,7 @@ function updateDarkroomHunt(dt,t){
   }
 }
 function storyTick(dt, t) {
-  try { updatePorchPrimo(); updateAtmosphere(); updateEscalation(dt); updateCellarHunt(dt, t); updateDarkroomHunt(dt,t); updateCinematic(); } catch (err) { console.error('primo', err); }
+  try { updatePorchPrimo(); updateAtmosphere(); updateEscalation(dt); updateCellarHunt(dt, t); updateDarkroomHunt(dt,t); updateChurchBell(dt); updateCinematic(); } catch (err) { console.error('primo', err); }
   try {
     updateEmitters(dt);
     updateIndustryNoise(dt);
