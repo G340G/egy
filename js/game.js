@@ -980,18 +980,21 @@ function triggerKillScene() {
   for(const npc of [victim,executioner]){const ix=z.interactables.findIndex(v=>v.id===npc.id);if(ix>=0)z.interactables.splice(ix,1);}
   const stain=new THREE.Mesh(new THREE.CircleGeometry(.85,32),new THREE.MeshBasicMaterial({color:0x270708,transparent:true,opacity:0}));
   stain.rotation.x=-Math.PI/2;stain.position.set(0,.015,-1.8);z.group.add(stain);
-  const event={id:'cantore_scene',type:'event',object:victim.object,point:victim.object.position,radius:4.8,prompt:'[ E ] REMAIN IN THE NAVE',done:false,run:()=>{
+  const event={id:'cantore_scene',type:'event',object:victim.object,point:victim.object.position,radius:4.8,prompt:'[ E ] KEEP HOLDING THE ROPE',done:false,run:()=>{
     if(event.done)return;event.done=true;controls.unlock();dialogueOpen=true;
     $('speaker').textContent='RECORDING / 03:17';
-    $('subtitle').textContent='Dario tilts his head. The singer stops singing. The bell continues to vibrate, though nobody touches it. A voice from the bell tower speaks a name that is not his.';
-    speakVoice('Dario tilts his head. The singer stops singing. The bell continues to vibrate, though nobody touches it.','RECORDING');
-    $('subtitle-wrap').classList.add('visible');$('dialogue-options').innerHTML='<button class="dialogue-option" id="event-continue"><b>[↵]</b>Look away.</button>';
+    $('subtitle').textContent='Your hand remains closed around the rope. Dario does not resist. Walter stands behind him with both hands open. The bell keeps moving while Dario looks toward the altar.';
+    speakVoice('Your hand remains closed around the rope. Dario does not resist. Walter stands behind him with both hands open.','RECORDING');
+    $('subtitle-wrap').classList.add('visible');$('dialogue-options').innerHTML='<button class="dialogue-option" id="event-continue"><b>[↵]</b>Open your hand.</button>';
     $('event-continue').onclick=()=>{
       if('speechSynthesis'in window)window.speechSynthesis.cancel();$('subtitle-wrap').classList.remove('visible');dialogueOpen=false;
       stain.material.opacity=.82;victim.object.rotation.x=1.42;victim.object.position.y=-.45;victim.fate='dead';victim.object.visible=true;
       executioner.object.position.set(3.8,0,-3.7);executioner.object.rotation.y=Math.PI;executioner.fate='present';
+      storyFlags.add('dario-bell-death');storyFlags.add('bell-released');if(storyRef.churchBell)storyRef.churchBell.userData.ringing=false;
+      journal.push({id:'bell-rope',title:'The Rope in Your Hand',description:'You held the bell rope while Walter stood behind Dario. You did not choose the order, but you kept the bell moving. Your hand was steady. The sound reached the nave after Dario had fallen.',kind:'witness account',zone:'church'});updateJournalCount();
+      flashFragment('collapse',175);setTimeout(()=>{audio?.mechanicalNoise(.24,620,.9,.13,0);audio?.mechanicalTone(93,36,1.1,'sawtooth',.075,0);},1080);
       queueCultFate('the nave',executioner,'vanish');scheduleCultSceneFates(1,'the bell','collapse');
-      fear=Math.min(1,fear+.28);glitchPulse=1.2;audio?.killSting();controls.lock();showToast('THE SINGER HAS BEEN REMOVED FROM THE RECORDING.');
+      fear=Math.min(1,fear+.28);glitchPulse=1.2;controls.lock();showToast('THE BELL CONTINUES AFTER YOUR HAND OPENS.');
     };
   }};
   z.interactables.push(event);
@@ -2497,10 +2500,12 @@ const MISSIONS=[
  {id:'remo',text:'Speak with Don Remo. Ask why the cross has been turned around.',when:()=>collected.size>=2,done:()=>storyFlags.has('talked-remo')},
  {id:'candles',text:'Light all three altar candles. The flames are part of the way forward.',when:()=>collected.size>=2,done:()=>storyFlags.has('altar-lit')},
  {id:'cemetery',text:'The First says the missing name is buried in the cemetery beside the industries.',when:()=>storyFlags.has('cemetery-bait'),done:()=>storyFlags.has('cemetery-shot')},
-  {id:'pino-field',text:'Follow Pino into the wheat field. The combine is still running.',when:()=>storyFlags.has('pino-sent'),done:()=>storyFlags.has('pino-collapsed')}
+  {id:'pino-field',text:'Follow Pino into the wheat field. The combine is still running.',when:()=>storyFlags.has('pino-sent'),done:()=>storyFlags.has('pino-collapsed')},
+  {id:'bell-rope',text:'Hold Don Remo’s bell rope while Walter carries out the instruction given to Dario.',when:()=>storyFlags.has('heard-dario-plan')&&storyFlags.has('talked-remo'),done:()=>storyFlags.has('dario-bell-death')}
 ];
 function currentMissionText(){
  if(storyFlags.has('pino-sent')&&!storyFlags.has('pino-collapsed')&&currentZone==='road')return 'PINO WENT TOWARD THE WHEAT FIELD. FOLLOW THE ENGINE.';
+  if(currentZone==='church'&&storyFlags.has('heard-dario-plan')&&storyFlags.has('talked-remo')&&!storyFlags.has('dario-bell-death'))return 'HOLD THE BELL ROPE. WALTER IS WAITING BEHIND DARIO.';
  if(currentZone==='darkroom'&&!storyFlags.has('darkroom-cleared'))return 'SEARCH THE DARK ROOM — '+darkroomFindCount()+' / 6. Keep the beam moving.';
  if(storyFlags.has('altar-lit')&&!storyFlags.has('darkroom-cleared'))return currentZone==='cellar'?'THE SIDE DOOR IS OPEN. SEARCH THE DARK ROOM FOR THE SIX RECORDS.':'RETURN TO THE CELLAR. THE SIDE DOOR HAS OPENED.';
  if(storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))return currentZone==='abattoir'?'SPEAK WITH THE FIRST AGAIN. ASK HIM ABOUT THE SOUND HE REFUSED TO HEAR.':'RETURN TO THE SLAUGHTERHOUSE. THE FIRST IS WAITING BESIDE THE HOOKS.';
