@@ -288,8 +288,8 @@ function refreshPhotoNPC(npc){const key=npc.photoKey,image=PHOTO_IMAGES[key];if(
 
 function profileForNPC(name,variant){
  const n=(name||'').toLowerCase();
- if(['ines','anna','vanda','ada','mirella','teresa','woman by the canal','the widow','la donna','la vedova'].some(v=>n.includes(v)))return 'woman';
- if(n.includes('father remo')||n.includes('don remo')||n.includes('the first')||n.includes('il primo')||n.includes('dario')||n.includes('sergio')||n.includes('nino')||n.includes('elio'))return 'man';
+ if(['ines','anna','marta','vanda','ada','mirella','teresa','livia','woman by the canal','the widow','la donna','la vedova'].some(v=>n.includes(v)))return 'woman';
+ if(n.includes('father remo')||n.includes('don remo')||n.includes('the first')||n.includes('il primo')||n.includes('dario')||n.includes('sergio')||n.includes('pino')||n.includes('franco')||n.includes('walter')||n.includes('gabri')||n.includes('elio'))return 'man';
  if(n.includes('ottavio')||n.includes('the coat')||n.includes('il cappotto'))return 'oldman';
  return variant===0?'woman':'oldman';
 }
@@ -902,8 +902,8 @@ function triggerKillScene() {
   if(scenePlayed || !zones.church) return;
   scenePlayed=true;
   const z=zones.church;
-  // Never create replacement extras: Nino and Dario are two of the thirteen.
-  const victim=cultRoster.find(n=>n.name==='Nino'&&['present','queued'].includes(n.fate));
+  // Never create replacement extras: Pino and Dario are two of the thirteen.
+  const victim=cultRoster.find(n=>n.name==='Pino'&&['present','queued'].includes(n.fate));
   const executioner=cultRoster.find(n=>n.name==='Dario'&&['present','queued'].includes(n.fate));
   if(!victim || !executioner){
     storyFlags.add('empty-choir');
@@ -1166,34 +1166,43 @@ function buildHome() {
   buildCRT(z.group,-1.2,.05,-8.2);
   // The room is allowed to breathe: one wall text remains, not a slogan on every surface.
   addCandle(z.group,-5.2,.98,2.0,true);
-  addLook(z.group, -4.2, 1.6, -8.1, 'Finestra nord', 'Oltre il vetro, nella nebbia, una fila di figure gira intorno a un fuoco. Una di loro pende da una trave, e il vento non la muove. Si muove solo quando la stanza respira.');
-  addLook(z.group, 2.1, 2.2, -8.1, 'Il ritratto', 'Una fotografia di famiglia. Qualcuno ha graffiato via il volto dell’uomo, e i graffi sono ancora lucidi.');
+  addLook(z.group,-4.2,1.6,-8.1,'North window','Beyond the glass, figures circle a fire in the fog. One hangs from a beam. The wind does not move it. It moves only when the room breathes.');
+  addLook(z.group,2.1,2.2,-8.1,'The portrait','A family photograph. Someone has scratched away the man’s face. The grooves are still bright.');
   addDistantRitual(z.group, -4.2, -30);
   addDistantRitual(z.group, 4.5, -34);
   // Pictures face the wall, not the room.
-  const frame = addBox(z.group, 2.1, 2.25, -8.72, 1.0, .75, .08, M.gold); addBox(z.group, 2.1, 2.25, -8.66, .82, .58, .025, M.darkWall);
+  const frame=addBox(z.group,2.1,2.25,-8.72,1.0,.75,.08,M.gold);addBox(z.group,2.1,2.25,-8.66,.82,.58,.025,M.darkWall);
+  const thermos=buildThermos(z.group,-5.4,.88,2.15);thermos.rotation.z=.12;addLook(z.group,-5.4,1.08,2.15,'Ines’s thermos','A red enamel thermos. The handle has been worn smooth. On the base, scratched into the metal: GABRI / PASSENGER SEAT. The cup still smells faintly of bitter tea.');
   // Characters.
-  const ines = registerCultist(makeNPC(z.group, -6.5, -.2, 'Ines', 0x52483d, 0),{ line: 'La cucina resta calda anche quando nessuno ha fame. Siediti. Non serve che tu dica il tuo nome.', choices: ['Resta con noi.','Aiutami a uscire.'], replies: ['Non è un invito. È il vuoto che ti riconosce.', 'Ho già provato. La strada ricomincia sempre dal tavolo.'] });
-  const ottavio = registerCultist(makeNPC(z.group, 3.2, -3.6, 'Ottavio', 0x373735, 1),{ line: 'Non sento la stanza. Sento quando qualcuno decide di mentire.', choices: ['Che cosa dovrei ascoltare?','Hai mai sentito Il Bianco?'], replies: ['Il frigorifero. Tiene un si bemolle da quando è morto il vecchio.','No. Ma ho passato vent’anni a preparare qualcuno che potesse dirmi com’era.'] });
-  const anna=addCultist(z,-5.2,1.2,'Anna',0x4a4035,0,'Il piatto resta caldo per un uomo che non ha più bocca. Non sparecchiare.', ['Vuoi che resti?','Perché continui ad apparecchiare?'], ['Sì. Ma non al mio posto.','La tavola è l’unica cosa che non si svuota da sola.']);
-  anna.object.position.set(-5.2,0,1.2); anna.point=anna.object.position;
-  const dario=addCultist(z,-8.0,-6.1,'Dario',0x302d28,1,'Il disco non è un oggetto. È il nome che resta quando tutti i nomi sono stati tolti.', ['Chi guida il rito?','Che cosa succede a chi ascolta?'], ['Non c’è un capo. C’è soltanto chi ha già fatto spazio.','Non succede niente. È questo che li spaventa.']);dario.isLeader=true;
-  const sergio=addCultist(z,-.8,-6.5,'Sergio',0x4a443a,0,'Non credo più al disco. Ma se torno a casa, mi aspetta soltanto il mio rumore.', ['Possiamo uscire insieme?','Allora perché resti?'], ['Non c’è un fuori che sia rimasto uguale.','La compagnia è un vizio più forte della fede.']);
-  addCultist(z,7.9,-6.2,'Teresa',0x51483d,0,'Ho dimenticato il volto di mia figlia. Ricordo il rumore dei suoi passi.');
-  addCultist(z,8.05,.4,'Nino',0x3d423d,1,'La pompa dell’acqua gira da tre giorni. Nessuno l’ha collegata alla corrente.');
-  addCultist(z,8.05,6.1,'Vanda',0x544b43,0,'La stanza è vuota soltanto dalla parte di chi guarda.');
-  addCultist(z,.2,7.0,'Agostino',0x343a37,1,'Ho consegnato il mio nome alla porta. La porta mi ha restituito un numero.');
-  addCultist(z,-7.8,6.3,'Mirella',0x5a4c43,0,'Mi hanno detto che il silenzio era una forma di cura.');
-  addCultist(z,5.3,-1.3,'Gino',0x383b39,1,'La macchina per il ghiaccio lavora anche quando la spina è fuori.');
-  addCultist(z,-1.4,5.3,'Ada',0x66574a,0,'Non c’è una voce dentro il nastro. C’è la forma lasciata da una voce.');
-  addCultist(z,2.7,6.6,'Elio',0x34322e,1,'La tredicesima sedia è sempre stata rivolta verso il muro.');
+  const ines = registerCultist(makeNPC(z.group,-6.5,-.2,'Ines',0x52483d,0),{
+    line:'The kitchen stays warm even when nobody is hungry. Sit down. I have always believed that no one should die alone.',
+    choices:['Who was Gabri?','Did you know what the tea would do?'],
+    replies:['He sat in the passenger seat. I put the thermos between his hands because he was cold. I did not ask where the car was going.','I knew it would be gentle. That is not the same as knowing it was right.']
+  });
+  const ottavio = registerCultist(makeNPC(z.group,3.2,-3.6,'Ottavio',0x373735,1),{
+    line:'I am deaf. I have been deaf longer than this house has been standing. They still gave me the only copy of the record.',
+    choices:['How can you be the one who listened?','What did you keep?'],
+    replies:['I listened with my jaw against the table. The motor stopped. The room did not. I cannot tell you whether that was sound or memory.','The part nobody else could verify. They called it custody. I called it a promise I could never test.']
+  });
+  const anna=addCultist(z,-5.2,1.2,'Anna',0x4a4035,0,'The soup is still warm. There is a place for a man who has been dead for forty years. Do not clear it.',['Will he come back?','Why keep serving an empty place?'],['No. But the bowl must be ready.','If I stop, the table will remember that he is gone. I cannot be the one to tell it.']);
+  anna.object.position.set(-5.2,0,1.2);anna.point=anna.object.position;
+  const dario=addCultist(z,-8.0,-6.1,'Dario',0x302d28,1,'I believe in The White. I believe in it more than anyone in this house. That is why they avoid looking at me.',['Who leads the rite?','Why do they fear your belief?'],['There is no leader. Only a man who knows where to stand.','Because they are performing an emptiness they do not possess. I am not performing.']);dario.isLeader=true;
+  const sergio=addCultist(z,-.8,-6.5,'Sergio',0x4a443a,0,'I stopped believing years ago. I stayed for the company. There was nowhere else to eat in peace.',['Then why not leave?','Did you know what happened in 1977?'],['Loneliness is a door that opens inward. You can walk through it and still be in the same room.','I heard the plan for Dario through the wall. I did not tell him. That is when I belonged here.']);
+  addCultist(z,7.9,-6.2,'Marta',0x51483d,0,'I engrave my memoirs with a sunshine that was never there. The gold in the photograph is a lie. I remember the colour, not the day.',['Which memory is true?','Why do you keep writing?'],['The one that hurts the least is usually the one I invented.','If I stop, the memories begin to move without me.']);
+  const pino=addCultist(z,8.05,.4,'Pino',0x3d423d,1,'I know how to leave. I know the road, the ditch and the combine. I have been waiting for a reason to run.',['Show me the field path.','Do not go.'],['When the machine starts, do not watch the blades. Watch the man who told you it was only work.','You can ask me to stay. You cannot make the road forget me.']);pino.isRunner=true;
+  addCultist(z,8.05,6.1,'Gabri',0x544b43,1,'I wanted someone to look at me without looking through me. In the car, I thought the thermos was a gift.',['Did Ines come with you?','What did you want from The White?'],['She was kind. That was the part I trusted.','An audience. Something that would finally notice I was there.']);
+  addCultist(z,.2,7.0,'Walter',0x343a37,1,'Give me a task and I can become a person for as long as it takes to finish it.',['Who gave you the last task?','What happens when it is done?'],['The man with the paperback. He never tells you to push. He only tells you where to stand.','There is always another task. That is how the room keeps its shape.']);
+  addCultist(z,-7.8,6.3,'Livia',0x5a4c43,0,'I lost my speech. I kept the melody. Sometimes I can still sing the interval before the machine starts.',['Can you sing it now?','Who taught you the song?'],['No. The note has moved into my teeth.','A woman who never learned the words. She only knew when to breathe.']);
+  addCultist(z,5.3,-1.3,'Franco',0x383b39,1,'I cut meat for thirty years and never once for a reason. Here, the knife finally has a liturgy.',['Do you believe in The White?','What is the difference between craft and murder?'],['I believe in the edge. The rest is a room around it.','A witness. Someone who says the work was necessary.']);
+  addCultist(z,-1.4,5.3,'Ada',0x66574a,0,'There is no voice inside the tape. There is the shape a voice leaves when it has gone.',['What did you hear?','Was there ever music?'],['A chair scraping. A pipe ticking. A person breathing too close to the microphone.','I do not know. Nobody agrees on what music would have sounded like.']);
+  addCultist(z,2.7,6.6,'Elio',0x34322e,1,'The thirteenth chair always faced the wall. The fourteenth had no chair at all.',['Who was the fourteenth?','Why face the wall?'],['The one who arrives after the counting has ended.','So nobody could mistake the empty place for an invitation.']);
   // A staged domestic killing: the room offers the player a choice to look.
   const annaMarker=new THREE.Mesh(new THREE.BoxGeometry(.22,.08,.22),M.clue);annaMarker.position.set(-5.2,.12,1.2);z.group.add(annaMarker);
   z.interactables.push({id:'anna_scene_trigger',type:'event',object:annaMarker,point:annaMarker.position,radius:3.2,prompt:'[ E ] GUARDA IL POSTO VUOTO',run:()=>triggerAnnaScene(z,annaMarker)});
   // Evidence in plain sight, once you stop looking for the album.
   addClueMesh(z.group,new THREE.Vector3(-5.2,1.1,2.0),'Seating List','A list of thirteen names. Beneath them, a fourteenth line has been erased so forcefully that it has scored the paper.','list','paper',{requiresFlag:'talked-ines',blockedHint:'Speak with Ines before examining the seating list.'});
   addClueMesh(z.group,new THREE.Vector3(5.8,1.45,-5.0),'Tuning Fork','A tuning fork. A=415 is engraved on the handle. The note does not match the one in your head.','fork','metal',{requiresFlag:'talked-ottavio',blockedHint:'Speak with Ottavio before examining the tuning fork.'});
-  addClueMesh(z.group, new THREE.Vector3(1.2, .06, 6.1), 'Trave incisa', 'Nel legno sono incisi ricordi che non sembrano appartenere alla stessa persona: un cane, una festa, una stanza senza porte.', 'beam', 'wood');
+  addClueMesh(z.group,new THREE.Vector3(1.2,.06,6.1),'The carved beam','A dog, a summer table, a room with no doors. The carvings were cut by several hands, but all share the same shallow final line.','beam','wood');
   const exit = addDoor(z.group, 0, 8.95, 'la strada', 'road', [0, 0, -3.4]); exit.prompt = '[ E ] TORNA ALLA STRADA';
   const hatch = addDoor(z.group,8.7,-6.2,'la cantina','cellar',[0,0,4.5],true,{rotationY:Math.PI/2,style:'hatch'}); hatch.prompt = '[ E ] SCENDI — LA CANTINA';
   // The cover is removed as soon as all eight documents have been collected.
@@ -1808,10 +1817,16 @@ function chooseDialogue(npc, index) {
   if(lower==='sergio'){storyFlags.add(index===0?'sergio-truth':'sergio-silence');}
   if(lower==='dario'){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
   if(lower==='il primo'&&!npc.isOpeningPrimo){storyFlags.add(index===0?'challenged-leader':'accepted-leader');}
-  if(lower==='father remo'){storyFlags.add('talked-remo');if(index===1)showToast('FATHER REMO HAS EXPLAINED THE ALTAR. LIGHT ALL THREE CANDLES.');}
-  if(lower==='the widow'||lower==='the widow')storyFlags.add('talked-widow');
+  if(lower==='father remo'||lower==='don remo'){storyFlags.add('talked-remo');if(index===1)showToast('DON REMO HAS EXPLAINED THE ALTAR. LIGHT ALL THREE CANDLES.');}
+  if(lower==='the widow'||lower==='widow')storyFlags.add('talked-widow');
   if(lower==='ottavio'){storyFlags.add('talked-ottavio');if(index===1)storyFlags.add('ottavio-audio');}
   if(lower==='anna')storyFlags.add(index===0?'anna-mercy':'anna-table');
+  if(lower==='pino'){storyFlags.add('talked-pino');if(index===0){storyFlags.add('pino-sent');flashFragment('collapse',140);}}
+  if(lower==='marta'&&index===1)flashFragment('nosebleed',120);
+  if(lower==='gabri'&&index===0)flashFragment('tea',120);
+  if(lower==='livia')storyFlags.add('livia-song');
+  if(lower==='ottavio')flashFragment('reel',105);
+  if(lower==='ines'&&index===1)flashFragment('tea',180);
   $('subtitle').textContent = reply; speakVoice(reply,npc.name); $('dialogue-options').innerHTML = '<button class="dialogue-option" id="dialogue-end"><b>[↵]</b>Say nothing more.</button>'; 
   $('dialogue-end').addEventListener('click', closeDialogue);
   glitchPulse = Math.max(glitchPulse, .28); audio.stinger(.25);
@@ -2415,10 +2430,10 @@ function updateCemeteryTrap(){
 // Dialogue choices with consequences: some open or close missions, others move the enemy or the cult.
 function applyConsequences(npc, index) {
   const key = (npc.name || '').toLowerCase();
-  if (key === 'ottavio' && index === 0) { storyFlags.add('ottavio-cold'); showToast('OTTAVIO TURNS HIS BACK ON YOU. TRY SERGIO.'); }
+  if (key === 'ottavio' && index === 0) { storyFlags.add('ottavio-cold'); showToast('OTTAVIO TURNS HIS BACK ON YOU. SERGIO MAY STILL SPEAK.'); }
   if (key === 'ines' && index === 1) { queueCultFate('Ines was betrayed', npc, 'collapse'); fear = Math.min(1, fear + .12); showToast('INES HAS UNDERSTOOD. THE HOUSE TIGHTENS.'); }
-  if (key === 'dario' && index === 1) { storyFlags.add('primo-alerted'); showToast('IL PRIMO HAS HEARD YOUR NAME.'); }
-  if (key === 'anna' && index === 1) { queueCultFate('il piatto di Anna', npc, 'collapse'); }
+  if (key === 'dario' && index === 1) { storyFlags.add('primo-alerted'); showToast('THE FIRST HAS HEARD YOUR NAME.'); }
+  if (key === 'anna' && index === 1) { queueCultFate('Anna’s empty place', npc, 'collapse'); }
   if (key === 'sergio' && index === 1) { fear = Math.min(1, fear + .05); }
   if (key === 'il primo' && npc.isOpeningPrimo) { storyFlags.add('met-primo'); storyFlags.add('primo-first-contact'); }
   else if (key === 'the first') { const d = primoDialogue(); d.actions?.[index]?.(); }
@@ -3075,7 +3090,7 @@ function primoSpeedBonus() { return difficultyTier() * .13; }
 function applyChoiceEffect(key,index,npc=null){
  const row=CHOICE_EFFECTS[key],entry=row?.[index]||null;
  const [severity,effect]=entry?entry.split(':'):[index>0?'bad':'good','none'];
- if(severity==='bad'){showThirteenDemises(npc);if(npc?.cultist&&npc.fate==='present')queueCultFate('a wrong answer',npc,'collapse');}
+ if(severity==='bad'){showThirteenDemises(npc);flashFragment(npc?.name?.toLowerCase()==='ines'?'tea':npc?.name?.toLowerCase()==='ottavio'?'reel':'collapse',125);if(npc?.cultist&&npc.fate==='present')queueCultFate('a wrong answer',npc,'collapse');}
   if (effect === 'map') {
     if (storyFlags.has('map')) return; storyFlags.add('map');
     journal.push({ id: 'map', title: 'Folded map', description: 'The farmhouse plan. The road runs north to the house. The slaughterhouse lies east, behind the barn. The church is past the canal. The forest begins where the lamp goes out.', kind: 'map', zone: currentZone });
