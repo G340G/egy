@@ -1242,7 +1242,7 @@ function buildHome() {
   const ines = registerCultist(makeNPC(z.group,-6.5,-.2,'Ines',0x52483d,0),{
     line:'The kitchen stays warm even when nobody is hungry. Sit down. I have always believed that no one should die alone.',
     choices:['Who was Gabri?','Did you know what the tea would do?'],
-    replies:['He sat in the passenger seat. I put the thermos between his hands because he was cold. I did not ask where the car was going.','I knew it would be gentle. That is not the same as knowing it was right.']
+    replies:['He sat in the passenger seat. I put the thermos between his hands because he was cold. I did not ask where the car was going. There is blood at your lip. Hold still.','I knew it would be gentle. That is not the same as knowing it was right.']
   });
   const ottavio = registerCultist(makeNPC(z.group,3.2,-3.6,'Ottavio',0x373735,1),{
     line:'I am deaf. I have been deaf longer than this house has been standing. They still gave me the only copy of the record.',
@@ -1937,6 +1937,7 @@ function chooseDialogue(npc, index) {
   if(lower==='gabri'&&index===0)flashFragment('tea',120);
   if(lower==='livia')storyFlags.add('livia-song');
   if(lower==='ottavio')flashFragment('reel',105);
+  if(lower==='ines'&&index===0){storyFlags.add('ines-wiped-blood');flashFragment('nosebleed',165);showToast('INES WIPES THE BLOOD WITHOUT ASKING WHAT CAUSED IT.');const left=npc.leftArm?.rotation.z??0,fore=npc.leftForearm?.rotation.z??0;if(npc.leftArm)npc.leftArm.rotation.z=-1.05;if(npc.leftForearm)npc.leftForearm.rotation.z=-.72;setTimeout(()=>{if(npc.leftArm)npc.leftArm.rotation.z=left;if(npc.leftForearm)npc.leftForearm.rotation.z=fore;},1150);}
   if(lower==='ines'&&index===1)flashFragment('tea',180);
   $('subtitle').textContent = reply; speakVoice(reply,npc.name); $('dialogue-options').innerHTML = '<button class="dialogue-option" id="dialogue-end"><b>[↵]</b>Say nothing more.</button>'; 
   $('dialogue-end').addEventListener('click', closeDialogue);
@@ -1998,6 +1999,7 @@ function beginListening(){
   if(!storyFlags.has('altar-lit')){showToast('THE ALTAR IS STILL DARK. LIGHT ALL THREE CANDLES FIRST.');return;}
   if(!storyFlags.has('darkroom-cleared')){showToast('THE DARK ROOM HAS NOT BEEN SEARCHED. FIND THE SIX RECORDS OF WHAT HAPPENED.');return;}
   if(!storyFlags.has('corrado-tea')){showToast('THE FIRST IS STILL IN THE SLAUGHTERHOUSE. ASK HIM ABOUT THE EARPLUGS.');return;}
+  if(!storyFlags.has('spectacle-seen')){showToast('YOU HAVE NOT TAKEN YOUR SEAT. WATCH THE SILENT REEL FIRST.');return;}
   storyFlags.add('listened-to-white');
   if (listeningPending || gameEnded) return;
   // Lock the player inside the listening room. Every remaining cultist is brought
@@ -2504,12 +2506,14 @@ const MISSIONS=[
  {id:'cemetery',text:'The First says the missing name is buried in the cemetery beside the industries.',when:()=>storyFlags.has('cemetery-bait'),done:()=>storyFlags.has('cemetery-shot')},
   {id:'pino-field',text:'Follow Pino into the wheat field. The combine is still running.',when:()=>storyFlags.has('pino-sent'),done:()=>storyFlags.has('pino-collapsed')},
   {id:'bell-rope',text:'Hold Don Remo’s bell rope while Walter carries out the instruction given to Dario.',when:()=>storyFlags.has('heard-dario-plan')&&storyFlags.has('talked-remo'),done:()=>storyFlags.has('dario-bell-death')},
-  {id:'pastorale',text:'After the forest, follow the waterline and recover three pastoral intervals.',when:()=>storyFlags.has('escaped-forest'),done:()=>storyFlags.has('pastorale-complete')}
+  {id:'pastorale',text:'After the forest, follow the waterline and recover three pastoral intervals.',when:()=>storyFlags.has('escaped-forest'),done:()=>storyFlags.has('pastorale-complete')},
+  {id:'screening',text:'Take your seat. Watch the silent reel before you ask the platter to speak.',when:()=>currentZone==='abattoir',done:()=>storyFlags.has('spectacle-seen')}
 ];
 function currentMissionText(){
  if(storyFlags.has('escaped-forest')&&!storyFlags.has('pastorale-complete')&&currentZone==='road')return 'FOLLOW THE WATERLINE. FIND THE THREE PASTORAL INTERVALS — '+['water','grain','reeds'].filter(k=>storyFlags.has('pastorale-'+k)).length+' / 3.';
  if(storyFlags.has('pino-sent')&&!storyFlags.has('pino-collapsed')&&currentZone==='road')return 'PINO WENT TOWARD THE WHEAT FIELD. FOLLOW THE ENGINE.';
   if(currentZone==='church'&&storyFlags.has('heard-dario-plan')&&storyFlags.has('talked-remo')&&!storyFlags.has('dario-bell-death'))return 'HOLD THE BELL ROPE. WALTER IS WAITING BEHIND DARIO.';
+ if(currentZone==='abattoir'&&!storyFlags.has('spectacle-seen'))return 'TAKE YOUR SEAT. THE REEL IS SILENT, BUT THE SOUND WILL ARRIVE.';
  if(currentZone==='darkroom'&&!storyFlags.has('darkroom-cleared'))return 'SEARCH THE DARK ROOM — '+darkroomFindCount()+' / 6. Keep the beam moving.';
  if(storyFlags.has('altar-lit')&&!storyFlags.has('darkroom-cleared'))return currentZone==='cellar'?'THE SIDE DOOR IS OPEN. SEARCH THE DARK ROOM FOR THE SIX RECORDS.':'RETURN TO THE CELLAR. THE SIDE DOOR HAS OPENED.';
  if(storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))return currentZone==='abattoir'?'SPEAK WITH THE FIRST AGAIN. ASK HIM ABOUT THE SOUND HE REFUSED TO HEAR.':'RETURN TO THE SLAUGHTERHOUSE. THE FIRST IS WAITING BESIDE THE HOOKS.';
@@ -2895,7 +2899,7 @@ function buildForest() {
 // The First: friendly on the surface, and every task he gives brings the new arrival closer to the void.
 function primoDialogue(){
   const f=storyFlags;
-  if(f.has('darkroom-cleared')&&!f.has('corrado-tea'))return{line:'You read the margins. Those numbers are not instructions for falling. They are the seconds I watched after each body stopped moving. You found the earplugs, too.',choices:['Why did you wear them?','Did you ever hear The White?'],replies:['I wanted the image without the sound. Sound makes a fall belong to someone. An image can be kept.','I heard the reels turn. I heard the room when the motor stopped. I never heard an album.'],actions:[()=>storyFlags.add('corrado-questioned'),()=>storyFlags.add('corrado-questioned')]};
+  if(f.has('darkroom-cleared')&&!f.has('corrado-tea'))return{line:'You read the margins. The sentence about willing nothingness is printed. The timings are mine. I added one line beneath them: “What is falling must also be pushed.” Those are not instructions for falling. They are the seconds I watched after each body stopped moving. You found the earplugs, too.',choices:['Why did you wear them?','Did you ever hear The White?'],replies:['I wanted the image without the sound. Sound makes a fall belong to someone. An image can be kept.','I heard the reels turn. I heard the room when the motor stopped. I never heard an album.'],actions:[()=>storyFlags.add('corrado-questioned'),()=>storyFlags.add('corrado-questioned')]};
   if(f.has('corrado-tea'))return{line:'The cup was warm. The room was not. You keep looking for the moment I fell, but you have already watched it. The sound came later.',choices:['Who is left in the house?','What was The White?'],replies:['The person who pours. The person who opens the door. The person who arrives.','A room that kept being mistaken for a song. That is all I can tell you now.'],actions:[()=>storyFlags.add('ines-survivor-seen'),()=>storyFlags.add('white-questioned')]};
   if(f.has('escaped-forest'))return{line:'You came back. I thought you might. There is a particular way a person walks after seeing the place where they would disappear. You do not have to tell me what you saw.',choices:['I want to leave.','Why did you bring me there?'],replies:['Of course. I would never keep you. The door is open; you only have to decide which side of it you are on.','I wanted you to hear the trees without the village speaking over them. You heard something. That is not the same as understanding it.'],actions:[()=>storyFlags.add('primo-leave'),()=>storyFlags.add('primo-questioned')]};
   if(f.has('primo-task-dig')&&f.has('primo-task-candles'))return{line:'The album is almost ready. You have done more than I asked, and I am grateful. But you have started looking at the doors instead of the rooms. That usually means a person is close to deciding.',choices:['Take me to the car.','I want to leave.','What do you need from me?'],replies:['Good. We can speak where the walls cannot interrupt. The forest is quieter than this room.','Then go. I will not follow. I only hope you do not mistake the road for an answer.','Nothing you do not already know how to give. A little attention. A little space. Your name, perhaps, if you still feel it belongs to you.'],actions:[()=>{storyFlags.add('car-invited');pendingCar=true;},()=>storyFlags.add('primo-leave'),()=>storyFlags.add('primo-questioned')]};
@@ -2947,7 +2951,7 @@ function startCollapseScreening(){
   storyScene={type:'screening',t:0,dur:19.5,i:0,flashA:false,flashB:false,sound:false,lines:[
     [.6,'Voice: A sheet, a projector, thirteen chairs. The room has built a cinema out of its own furniture.'],
     [3.2,'Voice: The image arrives first. A body falls behind the white cloth.'],
-    [6.2,'Tobia: I am in the audience. I do not get up.'],
+    [6.2,'Tobia: I am in the audience. I do not get up. A child claps before the body reaches the floor.'],
     [9.0,'Voice: They used to cheer when something fell. The sound came later, and made the image belong to somebody.'],
     [13.2,'Tobia: I know what I am watching. I keep watching.'],
     [16.4,'Voice: There are no villains in the seats. Only people who came to see.']
@@ -3086,7 +3090,7 @@ function updateStoryScene(dt, t) {
   else if(s.type==='screening'){
     camera.position.set(0,1.68,5.8);camera.lookAt(0,2.0,-9.45);
     if(s.t>=4.6&&!s.flashA){s.flashA=true;flashFragment('collapse',135);glitchPulse=Math.max(glitchPulse,.8);}
-    if(s.t>=8.2&&!s.flashB){s.flashB=true;flashFragment('tea',125);glitchPulse=Math.max(glitchPulse,1.0);}
+    if(s.t>=8.2&&!s.flashB){s.flashB=true;flashFragment('nosebleed',125);glitchPulse=Math.max(glitchPulse,1.0);}
     if(s.t>=11.5&&!s.sound){s.sound=true;audio?.mechanicalNoise(.28,380,.8,.12,0);audio?.mechanicalTone(92,35,1.6,'sawtooth',.075,0);}
     if(s.t>=s.dur)endCollapseScreening();
   }
