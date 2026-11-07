@@ -98,7 +98,7 @@ try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
 } catch (error) {
   const fatal = $('fatal');
-  fatal.textContent = `WEBGL NON DISPONIBILE.\nApri il gioco in un browser desktop aggiornato con accelerazione grafica attiva.\nDettaglio: ${error.message}`;
+  fatal.textContent = `WEBGL IS UNAVAILABLE.\nOpen the game in an up-to-date desktop browser with hardware acceleration enabled.\nDetails: ${error.message}`;
   fatal.classList.remove('hidden');
   throw error;
 }
@@ -362,9 +362,9 @@ function makeEvidenceCanvas(title, id, imageKey='oldman') {
     const img=PHOTO_IMAGES[imageKey];
     if(img){const ar=img.width/img.height;let sw=img.width,sh=img.height;if(ar>1.55){sw=img.height*1.55; }else if(ar<.64){sh=img.width/.64;} const sx=(img.width-sw)/2,sy=(img.height-sh)/2;ctx.save();ctx.filter='grayscale(100%) sepia(18%) contrast(1.2)';ctx.drawImage(img,sx,sy,sw,sh,30,88,205,190);ctx.restore();}
     else {ctx.fillStyle='#655b4b';ctx.fillRect(30,88,205,190);ctx.strokeStyle='#27241e';ctx.lineWidth=2;for(let i=0;i<7;i++){ctx.beginPath();ctx.moveTo(34,100+i*25);ctx.lineTo(230,96+i*25);ctx.stroke();}}
-    ctx.fillStyle='#3d392f';ctx.font='14px monospace';ctx.fillText('NEGATIVO / NON SVILUPPATO',256,113);ctx.fillText('ORA: 03:17',256,143);ctx.fillText('EMULSIONE DANNEGGIATA',256,173);
+    ctx.fillStyle='#3d392f';ctx.font='14px monospace';ctx.fillText('UNDEVELOPED NEGATIVE',256,113);ctx.fillText('TIME: 03:17',256,143);ctx.fillText('DAMAGED EMULSION',256,173);
     ctx.strokeStyle='#29251f';ctx.lineWidth=1;for(let i=0;i<9;i++){ctx.beginPath();ctx.moveTo(256,200+i*12);ctx.lineTo(470-(i%3)*25,200+i*12);ctx.stroke();}
-    ctx.fillStyle='rgba(50,35,25,.45)';ctx.font='italic 18px serif';ctx.fillText('non guardare troppo a lungo',30,312);
+    ctx.fillStyle='rgba(50,35,25,.45)';ctx.font='italic 18px serif';ctx.fillText('do not look for too long',30,312);
     for(let i=0;i<1400;i++){ctx.fillStyle=Math.random()>.5?'rgba(25,20,12,.09)':'rgba(255,255,255,.10)';ctx.fillRect(Math.random()*512,Math.random()*352,1+Math.random()*2,1);}
   };draw();const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
   evidenceRefreshers.push(()=>{draw();t.needsUpdate=true;});return t;
@@ -469,7 +469,7 @@ function registerCultist(npc, dialogue=null) {
   if(dialogue) npc.dialogue=dialogue;
   cultRoster.push(npc); return npc;
 }
-function addCultist(zone, x, z, name, coat=0x34332f, variant=0, line='Non siamo qui per ascoltare. Siamo qui per lasciare spazio.', choices=['Che cosa aspettate?','Chi vi ha convocati?'], replies=['Il momento in cui qualcuno smette di avere un nome.','La stanza era già piena prima che arrivassimo.']) {
+function addCultist(zone, x, z, name, coat=0x34332f, variant=0, line='We are not here to listen. We are here to make room.', choices=['What are you waiting for?','Who called you here?'], replies=['The moment someone stops having a name.','The room was already full before we arrived.']) {
   const npc=makeNPC(zone.group,x,z,name,coat,variant);
   npc.dialogue={line,choices,replies}; return registerCultist(npc);
 }
@@ -510,9 +510,9 @@ function startCultFate(entry) {
   approach.x=THREE.MathUtils.clamp(approach.x,zone.bounds.minX+1,zone.bounds.maxX-1);
   approach.z=THREE.MathUtils.clamp(approach.z,zone.bounds.minZ+1,zone.bounds.maxZ-1);
   cultFateActive={...entry,phase:0,start:npc.object.position.clone(),target:approach,elapsed:0};
-  showToast(entry.mode==='collapse'?`${npc.name.toUpperCase()} HA SMESSO DI SOSTENERSI.`:`${npc.name.toUpperCase()} HA LASCIATO IL POSTO.`);
-  if(entry.mode==='collapse') speakVoice(`${npc.name}. Non c'è più niente da riempire.`,npc.name);
-  else speakVoice(`${npc.name}: non ricordare il mio volto.`,npc.name);
+  showToast(entry.mode==='collapse'?`${npc.name.toUpperCase()} HAS STOPPED HOLDING THEMSELVES UP.`:`${npc.name.toUpperCase()} HAS LEFT THEIR PLACE.`);
+  if(entry.mode==='collapse') speakVoice(`${npc.name}. There is nothing left to fill.`,npc.name);
+  else speakVoice(`${npc.name}: do not remember my face.`,npc.name);
   glitchPulse=Math.max(glitchPulse,.85);audio?.killingAudio();
 }
 function updateCultSequence(dt,t) {
@@ -582,7 +582,7 @@ function addDoor(group,x,z,label,destination,spawn,locked=false,options={}){
     addBox(root,0,2.68,.12,2.05,.18,.66,M.darkWood,{rotation:[-.035,0,0]});
   }
   const entry={id:`door_${destination}`,type:'door',object:root,point:root.position,radius:options.radius??3.3,
-    prompt:locked?'[ E ] LA SOGLIA È BLOCCATA':`[ E ] ENTRA — ${label.toUpperCase()}`,
+    prompt:locked?'[ E ] THRESHOLD LOCKED':`[ E ] ENTER — ${label.toUpperCase()}`, 
     label,destination,spawn,locked,slab,doorPivot:pivot,openAngle:options.openAngle??-1.08};
   group.userData.interactables.push(entry);return entry;
 }
@@ -949,7 +949,7 @@ function triggerKillScene() {
   if(!victim || !executioner){
     storyFlags.add('empty-choir');
     audio?.mechanicalEvent('bell');
-    showToast('LA NAVATA È PIENA SOLTANTO DELLA REGISTRAZIONE.');
+    showToast('THE NAVE IS FULL OF NOTHING BUT THE RECORDING.');
     return;
   }
   removeQueuedCultist(victim);removeQueuedCultist(executioner);
@@ -961,16 +961,16 @@ function triggerKillScene() {
   stain.rotation.x=-Math.PI/2;stain.position.set(0,.015,-1.8);z.group.add(stain);
   const event={id:'cantore_scene',type:'event',object:victim.object,point:victim.object.position,radius:4.8,prompt:'[ E ] RESTA NELLA NAVATA',done:false,run:()=>{
     if(event.done)return;event.done=true;controls.unlock();dialogueOpen=true;
-    $('speaker').textContent='REGISTRAZIONE / 03:17';
-    $('subtitle').textContent='Dario inclina la testa. Il cantore smette di cantare. La campana continua a vibrare, anche se nessuno la tocca. Una voce, dal campanile, pronuncia un nome che non è il suo.';
-    speakVoice('Dario inclina la testa. Il cantore smette di cantare. La campana continua a vibrare, anche se nessuno la tocca.','REGISTRAZIONE');
-    $('subtitle-wrap').classList.add('visible');$('dialogue-options').innerHTML='<button class="dialogue-option" id="event-continue"><b>[↵]</b>Non guardare più.</button>';
+    $('speaker').textContent='RECORDING / 03:17';
+    $('subtitle').textContent='Dario tilts his head. The singer stops singing. The bell continues to vibrate, though nobody touches it. A voice from the bell tower speaks a name that is not his.';
+    speakVoice('Dario tilts his head. The singer stops singing. The bell continues to vibrate, though nobody touches it.','RECORDING');
+    $('subtitle-wrap').classList.add('visible');$('dialogue-options').innerHTML='<button class="dialogue-option" id="event-continue"><b>[↵]</b>Look away.</button>';
     $('event-continue').onclick=()=>{
       if('speechSynthesis'in window)window.speechSynthesis.cancel();$('subtitle-wrap').classList.remove('visible');dialogueOpen=false;
       stain.material.opacity=.82;victim.object.rotation.x=1.42;victim.object.position.y=-.45;victim.fate='dead';victim.object.visible=true;
       executioner.object.position.set(3.8,0,-3.7);executioner.object.rotation.y=Math.PI;executioner.fate='present';
-      queueCultFate('la navata',executioner,'vanish');scheduleCultSceneFates(1,'la campana','collapse');
-      fear=Math.min(1,fear+.28);glitchPulse=1.2;audio?.killSting();controls.lock();showToast('IL CANTORE È STATO TOLTO DALLA REGISTRAZIONE.');
+      queueCultFate('the nave',executioner,'vanish');scheduleCultSceneFates(1,'the bell','collapse');
+      fear=Math.min(1,fear+.28);glitchPulse=1.2;audio?.killSting();controls.lock();showToast('THE SINGER HAS BEEN REMOVED FROM THE RECORDING.');
     };
   }};
   z.interactables.push(event);
@@ -980,11 +980,11 @@ function triggerAnnaScene(z, annaMarker) {
   if(!anna || !annaMarker)return;
   const stain=new THREE.Mesh(new THREE.CircleGeometry(.62,28),new THREE.MeshBasicMaterial({color:0x260607,transparent:true,opacity:0}));
   stain.rotation.x=-Math.PI/2;stain.position.set(-5.2,.018,1.2);z.group.add(stain);
-  const ev={id:'anna_scene',type:'event',object:annaMarker,point:annaMarker.position,radius:3.4,prompt:'[ E ] GUARDA LA SEDIA',done:false,run:()=>{
+  const ev={id:'anna_scene',type:'event',object:annaMarker,point:annaMarker.position,radius:3.4,prompt:'[ E ] LOOK AT THE EMPTY CHAIR',done:false,run:()=>{
     if(ev.done)return;ev.done=true;controls.unlock();dialogueOpen=true;
     const annaStillPresent=['present','queued'].includes(anna.fate);
     $('speaker').textContent='ANNA / CUCINA';
-    $('subtitle').textContent=annaStillPresent?'Anna posa il piatto davanti a un posto vuoto. «Lui mangia soltanto quando nessuno lo guarda». La luce della cucina si spegne.':'Il piatto è ancora caldo. La sedia è vuota da prima che tu entrassi. Qualcuno continua a masticare dall’interno del muro.';
+    $('subtitle').textContent=annaStillPresent?'Anna sets the plate before an empty place. “He only eats when nobody is looking.” The kitchen light goes out.':'The plate is still warm. The chair was empty before you entered. Someone continues to chew inside the wall.';
     speakVoice($('subtitle').textContent,'Anna');$('subtitle-wrap').classList.add('visible');
     $('dialogue-options').innerHTML='<button class="dialogue-option" id="anna-continue"><b>[↵]</b>Resta immobile.</button>';
     $('anna-continue').onclick=()=>{
@@ -993,11 +993,11 @@ function triggerAnnaScene(z, annaMarker) {
         removeQueuedCultist(anna);if(anna.object.parent!==z.group)transferCultist(anna,z,-5.2,1.2);
         anna.object.position.set(-5.2,-.35,1.2);anna.object.rotation.x=1.35;anna.object.visible=true;anna.fate='dead';
         stain.material.opacity=.72;z.group.children.filter(c=>c.isPointLight).forEach(l=>l.intensity*=.22);
-        fear=Math.min(1,fear+.22);glitchPulse=1;audio?.killSting();scheduleCultSceneFates(1,'il posto a tavola','vanish');
-        showToast('IL POSTO A TAVOLA È STATO OCCUPATO.');
+        fear=Math.min(1,fear+.22);glitchPulse=1;audio?.killSting();scheduleCultSceneFates(1,'the place at the table','vanish');
+        showToast('THE PLACE AT THE TABLE HAS BEEN OCCUPIED.');
       }else{
         storyFlags.add('anna-empty-place');stain.material.opacity=.42;audio?.mechanicalEvent('drawer');glitchPulse=1.1;
-        showToast('LA SEDIA ERA VUOTA PRIMA DELLA TUA SCELTA.');
+        showToast('THE CHAIR WAS EMPTY BEFORE YOU MADE YOUR CHOICE.');
       }
       controls.lock();
     };
@@ -1116,7 +1116,7 @@ function buildRoad() {
   // The farmhouse's false golden window.
   addLight(z.group,0xffb35d,2.1,18,0,2.0,-7,{decay:1.5});
   const firstPrimo=makeNPC(z.group,-2.15,-5.45,'The First',0x4b463d,1);
-  firstPrimo.isOpeningPrimo=true;firstPrimo.radius=4.0;firstPrimo.prompt='[ E ] PARLA — IL PRIMO';
+  firstPrimo.isOpeningPrimo=true;firstPrimo.radius=4.0;firstPrimo.prompt='[ E ] SPEAK — THE FIRST';
   if (firstPrimo.head) firstPrimo.head.material = headMaterial();
   firstPrimo.dialogue={line:'You made it. I am glad. The road is unpleasant once the fog comes down. Come under the porch a moment; you must be cold.',choices:['Thank you. Have you been waiting long?','Do you know why I was called here?','Who are the people inside?'],replies:['Not long. I kept the lamp on because a person should not have to arrive at a dark door. That is all.','Only what the letter told me. You tune pianos, and you notice when a note is almost right. We have a room that needs that kind of attention.','Neighbours, mostly. They have been keeping one another company. It is easier to be here when somebody remembers to leave a place for you.']};
   const windowGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.1), new THREE.MeshBasicMaterial({ color: 0xc08a4a, transparent: true, opacity: .48 })); windowGlow.position.set(3.8, 3.0, -8.35); z.group.add(windowGlow);
@@ -1141,24 +1141,24 @@ function buildRoad() {
   const rifle=new THREE.Mesh(new THREE.CylinderGeometry(.027,.04,.95,6),M.black);rifle.rotation.z=-Math.PI/2;rifle.position.set(.36,.78,.17);marksman.add(rifle);
   const muzzle=new THREE.Mesh(new THREE.SphereGeometry(.035,6,5),M.rust);muzzle.position.set(.84,.78,.17);marksman.add(muzzle);
   // Doors into interiors.
-  addDoor(z.group,0,-8.27,'la casa','home',[0,0,6.2]);
-  addDoor(z.group,37,-17.28,'la chiesa','church',[0,0,9.4],false,{style:'roman'});
-  addDoor(z.group,-36,-8.78,'la casa vuota','ruin',[0,0,5.8]);
-  const abattoirDoor=addDoor(z.group,27,26.72,'la casa delle bestie','abattoir',[0,0,7.0],true);
+  addDoor(z.group,0,-8.27,'the farmhouse','home',[0,0,6.2]);
+  addDoor(z.group,37,-17.28,'the church','church',[0,0,9.4],false,{style:'roman'});
+  addDoor(z.group,-36,-8.78,'the empty house','ruin',[0,0,5.8]);
+  const abattoirDoor=addDoor(z.group,27,26.72,'the house of beasts','abattoir',[0,0,7.0],true);
   abattoirDoor.radius = 4.8;
   abattoirDoor.requiredClues = 7;
   addLight(z.group, 0xffb35d, 1.25, 7, 27, 2.5, 27.6, { decay: 1.5 });
   // Clue at the roadside mailbox.
   addBox(z.group, -4.5, .63, 20, .55, 1.25, .48, M.rust);
   addBox(z.group, -4.5, 1.32, 20, .7, .09, .58, M.darkWood);
-  addClueMesh(z.group, new THREE.Vector3(-4.0, .83, 19.7), 'Cronaca 1977', 'Un ritaglio di cronaca locale parla di tredici persone trovate morte in una chiesa di campagna, nell’inverno del 1977. Accanto ai corpi, un registratore ancora acceso. Il giornale non nomina il disco.', 'clipping', 'paper');
+  addClueMesh(z.group,new THREE.Vector3(-4.0,.83,19.7),'The 1977 Newspaper','A local clipping reports thirteen people found dead in a country church during the winter of 1977. Beside the bodies, a tape recorder was still running. The newspaper does not name the record.','clipping','paper');
   // A wet-coated figure at the bridge, more like a stain than a person.
   const woman = makeNPC(z.group, -31, -3, 'La donna al canale', 0x242a28, 1);
   woman.prompt = '[ E ] PARLA — LA DONNA AL CANALE';
   woman.dialogue = {
-    line: 'L’acqua non scorre verso il mare. Scorre verso il giorno in cui è stata versata.',
-    choices: ['Che cosa è successo qui?', 'Non ti conosco.'],
-    replies: ['Hanno chiuso la chiesa, ma hanno lasciato aperta la registrazione.', 'È meglio così. I nomi fanno entrare aria.']
+    line:'The water does not flow toward the sea. It flows toward the day it was poured.',
+    choices:['What happened here?','I do not know you.'], 
+    replies:['They closed the church but left the recording running.','That is better. Names let air in.']
   };
   // Rusted sign and road debris.
   addBox(z.group, 8.8, 1.3, 25, .1, 2.6, .1, M.rust); addBox(z.group, 9.5, 2.1, 25, 2.2, .65, .12, M.darkWood);
@@ -1272,7 +1272,7 @@ function buildChurch() {
   addCandle(z.group, -1.2, 1.13, -14.4, false, true);
   addCandle(z.group, 0, 1.13, -14.4, false, true);
   addCandle(z.group, 1.2, 1.13, -14.4, false, true);
-  addLook(z.group, 0, 1.4, -13.5, 'L’altare', 'Sotto la tovaglia c’è una chiave da macelleria. Sopra la tovaglia, un bicchiere d’acqua della pompa. Nessuno ha bevuto.');
+  addLook(z.group,0,1.4,-13.5,'The altar','Under the cloth is a butcher’s key. On top of it sits a glass of pump water. Nobody has drunk from it.');
   // A row of broken high windows admits cold vertical light.
   for (let side of [-1, 1]) for (let i = 0; i < 4; i++) {
     const win = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 2.2), new THREE.MeshBasicMaterial({ color: 0x99a5a4, transparent: true, opacity: .13, side: THREE.DoubleSide }));
@@ -1296,7 +1296,7 @@ function buildChurch() {
   remo.dialogue={line:'The door is not closed. The room is on the other side. The altar is an instrument, and the candles are its keys.',choices:['What is on the record?','Why has the cross been turned around?'],replies:['A sound that does not need to be heard. A place that does not need to be inhabited.','The cross faces the road because the dead were never meant to stay here. Light all three altar candles. The room must be seen clearly before the record can be heard.']};
   const bellMarker=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.18),M.clue);bellMarker.position.set(-6.8,.12,-5.8);z.group.add(bellMarker);z.interactables.push({id:'bell_event',type:'event',object:bellMarker,point:bellMarker.position,radius:2.8,prompt:'[ E ] PULL THE BELL ROPE',run:()=>{audio?.bell();triggerKillScene();}});
   addClueMesh(z.group,new THREE.Vector3(-5.8,1.7,-13.6),'Mass Register','The page lists a sequence of stations. The numbering jumps from the eleventh to the fourteenth. On the reverse: “no funeral.”','mass','paper',{requiresFlag:'talked-remo',blockedHint:'Speak with Father Remo before examining the Mass Register.'});
-  addDoor(z.group,0,11.9,'il sagrato','road',[0,0,-29],false,{style:'roman'});
+  addDoor(z.group,0,11.9,'the churchyard','road',[0,0,-29],false,{style:'roman'});
   z.mist = addFog(z.group, 38, 36, 0xb7bcb8, 67);
   z.solids.push({ minX: -9, maxX: -8.7, minZ: -17, maxZ: 12 }, { minX: 8.7, maxX: 9, minZ: -17, maxZ: 12 }, { minX: -9, maxX: 9, minZ: -17.3, maxZ: -17 }, { minX: -9, maxX: -5, minZ: 11.7, maxZ: 12 }, { minX: 5, maxX: 9, minZ: 11.7, maxZ: 12 });
   return z;
@@ -1318,7 +1318,7 @@ function buildRuin() {
   woman.dialogue={line:'My husband is not dead. He simply stopped answering the telephone. Eleven winters have passed.',choices:['Why do you keep the light on?','Did you know about the recording?'],replies:['Because night comes in through the sockets. The light keeps it busy.','The technician arrived with an empty suitcase. He left with a song I cannot remember.']};
   addClueMesh(z.group,new THREE.Vector3(-2.2,.95,-4.4),'Burned Photograph','A photograph of the church in 1977. In one corner, almost outside the frame, a small gas heater can be seen behind the choir.','photo','paper',{requiresFlag:'talked-widow',blockedHint:'Speak with the Widow before examining the burned photograph.'});
   addClueMesh(z.group,new THREE.Vector3(5.0,.12,1.0),'Answering Machine','An unlabelled microcassette. The tape contains only the click of the REC button and someone inhaling before speaking.','voicemail','metal',{requiresFlag:'talked-widow',blockedHint:'Speak with the Widow before examining the answering-machine tape.'});
-  addDoor(z.group, 0, 7.95, 'la strada', 'road', [-28, 0, -2]);
+  addDoor(z.group,0,7.95,'the road','road',[-28,0,-2]);
   z.mist = addFog(z.group, 25, 20, 0xb2b7b3, 18);
   z.solids.push({ minX: -8, maxX: -7.7, minZ: -8, maxZ: 8 }, { minX: 7.7, maxX: 8, minZ: -8, maxZ: 8 }, { minX: -8, maxX: 8, minZ: -8.2, maxZ: -8 }, { minX: -8, maxX: -2.5, minZ: 7.7, maxZ: 8 }, { minX: 2.5, maxX: 8, minZ: 7.7, maxZ: 8 });
   return z;
@@ -1374,7 +1374,7 @@ function buildAbattoir() {
   for(let i=0;i<8;i++){const beam=addBox(z.group,-10+i*2.85,3.73,0,.16,.28,19,M.darkWood);beam.rotation.z=(Math.random()-.5)*.025;}
   addLight(z.group, 0xff3a22, 1.1, 9, -5, 3.3, 3); addLight(z.group, 0xff3a22, .9, 8, 5, 3.2, -3);
   addBox(z.group, -5, 3.45, 3, .14, .2, .14, M.black); addBox(z.group, 5, 3.45, -3, .14, .2, .14, M.black);
-  addLook(z.group, 11.2, 3.0, -3, 'Finestra est', 'Fuori: un rogo più grande, un cerchio di figure che girano lente, e un corpo sospeso a un palo. Qualcuno ha scritto un numero sul vetro: 13.');
+  addLook(z.group,11.2,3.0,-3,'East window','Outside: a larger fire, a ring of figures turning slowly, and a body suspended from a post. Someone has written a number on the glass: 13.');
   addDistantRitual(z.group, 30, -3.4);
   addDistantRitual(z.group, 32, 4.5);
   // Meat rails and overhead hoists; carcasses are sculptural, not realistic gore.
@@ -1388,20 +1388,20 @@ function buildAbattoir() {
   for(let i=0;i<6;i++){const chain=new THREE.Mesh(new THREE.CylinderGeometry(.012,.016,.8,6),M.rust);chain.position.set(-8+i*3.2,3.35,3.3);z.group.add(chain);}
   // The room contains manifestos that contradict each other, by design.
   // The cult leader is hidden at the far end; his face is turned away until spoken to.
-  const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI; if (leader.head) leader.head.material = headMaterial();leader.dialogue={line:'Non sono il capo. Sono il primo che ha capito che la stanza non era vuota: eravamo noi a occupare troppo spazio.',choices:['Togli il nastro.','Dammi il tuo posto.'],replies:['Non c’è nastro da togliere. La macchina gira senza bobina.','Il posto non è mio. È quello che resta quando rinunci al tuo nome.']};
+  const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI; if (leader.head) leader.head.material = headMaterial();leader.dialogue={line:'I am not the leader. I am the first to understand that the room was not empty: we were taking up too much space.',choices:['Remove the tape.','Give me your place.'],replies:['There is no tape to remove. The machine turns without a reel.','The place is not mine. It is what remains when you give up your name.']};
   const eventMarker=new THREE.Mesh(new THREE.BoxGeometry(.34,.14,.34),M.clue);eventMarker.position.set(0,.12,1.7);z.group.add(eventMarker);
-  z.interactables.push({id:'abattoir_ropes',type:'event',object:eventMarker,point:eventMarker.position,radius:3.0,prompt:'[ E ] SCEGLI COSA FARE AI GANCI',run:()=>{
-    controls.unlock();dialogueOpen=true;$('speaker').textContent='IL LOCALE / I QUATTRO CORPI';$('subtitle').textContent='Le catene sono in tensione. Una voce arriva dal pavimento: «Se li liberi, la stanza resta senza testimoni. Se li lasci, diventi parte dell’inventario». Quando guardi di nuovo, uno dei corpi ha cambiato posizione.';speakVoice($('subtitle').textContent,'IL LOCALE');$('subtitle-wrap').classList.add('visible');
+  z.interactables.push({id:'abattoir_ropes',type:'event',object:eventMarker,point:eventMarker.position,radius:3.0,prompt:'[ E ] CHOOSE WHAT TO DO WITH THE HOOKS',run:()=>{
+    controls.unlock();dialogueOpen=true;$('speaker').textContent='THE ROOM / THE FOUR BODIES';$('subtitle').textContent='The chains are under tension. A voice comes from the floor: “If you free them, the room is left without witnesses. If you leave them, you become part of the inventory.” When you look again, one of the bodies has changed position.';speakVoice($('subtitle').textContent,'THE ROOM');$('subtitle-wrap').classList.add('visible');
     $('dialogue-options').innerHTML='';
-    [['TAGLIA LE CATENE','release'],['LASCIA TUTTO COM’È','keep']].forEach(([label,id])=>{const b=document.createElement('button');b.className='dialogue-option';b.textContent=label;b.onclick=()=>{storyFlags.add(id==='release'?'released':'complicit');if(id==='release'){carcasses[1].rotation.z=.8;carcasses[1].position.y=-.3;audio?.mechanicalEvent('hoist');fear=Math.min(1,fear+.2);scheduleCultSceneFates(2,'le catene', 'collapse');}else{carcasses[0].rotation.z=.42;storyFlags.add('leader-trust');scheduleCultSceneFates(2,'il silenzio dei ganci','vanish');}if('speechSynthesis'in window)window.speechSynthesis.cancel();$('subtitle-wrap').classList.remove('visible');dialogueOpen=false;glitchPulse=1.3;$('event-flash').classList.add('active');setTimeout(()=>$('event-flash').classList.remove('active'),220);controls.lock();showToast(id==='release'?'IL FERRO È LIBERO. I CORPI NO.':'LA MACCHINA CONTINUA A GIRARE.');};$('dialogue-options').appendChild(b);});
+    [['CUT THE CHAINS','release'],['LEAVE EVERYTHING AS IT IS','keep']].forEach(([label,id])=>{const b=document.createElement('button');b.className='dialogue-option';b.textContent=label;b.onclick=()=>{storyFlags.add(id==='release'?'released':'complicit');if(id==='release'){carcasses[1].rotation.z=.8;carcasses[1].position.y=-.3;audio?.mechanicalEvent('hoist');fear=Math.min(1,fear+.2);scheduleCultSceneFates(2,'the chains','collapse');}else{carcasses[0].rotation.z=.42;storyFlags.add('leader-trust');scheduleCultSceneFates(2,'the silence of the hooks','vanish');}if('speechSynthesis'in window)window.speechSynthesis.cancel();$('subtitle-wrap').classList.remove('visible');dialogueOpen=false;glitchPulse=1.3;$('event-flash').classList.add('active');setTimeout(()=>$('event-flash').classList.remove('active'),220);controls.lock();showToast(id==='release'?'THE IRON IS FREE. THE BODIES ARE NOT.':'THE MACHINE KEEPS TURNING.');};$('dialogue-options').appendChild(b);});
   }});
   // A passage that returns the player to the same room from the wrong direction.
   const loopMarker=new THREE.Mesh(new THREE.BoxGeometry(.4,.12,.4),M.gold);loopMarker.position.set(-8,.1,6.8);z.group.add(loopMarker);
-  z.interactables.push({id:'impossible_threshold',type:'event',object:loopMarker,point:loopMarker.position,radius:2.6,prompt:'[ E ] ATTRAVERSA LA SOGLIA CUCITA',run:()=>{playerAnchor.position.set(8.4,0,-6.8);camera.rotation.y+=Math.PI;glitchPulse=1.35;audio?.mechanicalEvent('latch');showToast('SEI ENTRATO DALLA STESSA PORTA. LA POLVERE È DALL’ALTRO LATO.');storyFlags.add('crossed-impossible');}});
-  addClueMesh(z.group,new THREE.Vector3(-7.6,1.35,-7.2),'Registro della macelleria','Il registro non riporta animali acquistati. Riporta tredici nomi, ciascuno cancellato dopo una singola data: 03:17.','butcher-ledger','paper');
+  z.interactables.push({id:'impossible_threshold',type:'event',object:loopMarker,point:loopMarker.position,radius:2.6,prompt:'[ E ] CROSS THE SEWN THRESHOLD',run:()=>{playerAnchor.position.set(8.4,0,-6.8);camera.rotation.y+=Math.PI;glitchPulse=1.35;audio?.mechanicalEvent('latch');showToast('YOU ENTERED THROUGH THE SAME DOOR. THE DUST IS ON THE OTHER SIDE.');storyFlags.add('crossed-impossible');}});
+  addClueMesh(z.group,new THREE.Vector3(-7.6,1.35,-7.2),'Slaughterhouse Ledger','The ledger records no animals purchased. It records thirteen names, each crossed out after a single time: 03:17.','butcher-ledger','paper');
   const ledgerEntry = z.interactables.find(item => item.id === 'butcher-ledger');
   if (ledgerEntry) ledgerEntry.radius = 4.2;
-  addDoor(z.group,0,9.85,'la strada','road',[27,0,29]);
+  addDoor(z.group,0,9.85,'the road','road',[27,0,29]);
   z.mist=addFog(z.group,32,27,0x8b8177,113);
   z.solids.push({minX:-12,maxX:-11.7,minZ:-10,maxZ:10},{minX:11.7,maxX:12,minZ:-10,maxZ:10},{minX:-12,maxX:12,minZ:-10.2,maxZ:-9.8},{minX:-12,maxX:-4.5,minZ:9.7,maxZ:10},{minX:4.5,maxX:12,minZ:9.7,maxZ:10});
   z.carcasses=carcasses;return z;
