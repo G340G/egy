@@ -1411,6 +1411,42 @@ function buildAbattoir() {
   const redLight=addLight(z.group,0x8e241d,2.2,15,0,3.2,-5.4);redLight.castShadow=true;
   const overhead=addLight(z.group,0xe1d4b4,1.4,13,0,3.8,1.3);overhead.position.y=3.7;
   for(let i=0;i<6;i++){const chain=new THREE.Mesh(new THREE.CylinderGeometry(.012,.016,.8,6),M.rust);chain.position.set(-8+i*3.2,3.35,3.3);z.group.add(chain);}
+  // A bedsheet, projector and a small audience turn the slaughterhouse into a private cinema.
+  const sheetGeo=new THREE.BufferGeometry(),sheetPos=[],sheetUv=[],sheetIdx=[];
+  for(let row=0;row<=9;row++)for(let col=0;col<=16;col++){
+    const u=col/16,v=row/9,x=(u-.5)*6.4,y=.25+v*3.25+Math.sin(u*Math.PI*3)*.11*(.35+v),zz=-9.52+Math.sin(u*Math.PI*5+v*2)*.035;
+    sheetPos.push(x,y,zz);sheetUv.push(u,v);
+  }
+  for(let row=0;row<9;row++)for(let col=0;col<16;col++){const a=row*17+col,b=a+1,c=a+17,d=c+1;sheetIdx.push(a,c,b,b,c,d);}
+  sheetGeo.setAttribute('position',new THREE.Float32BufferAttribute(sheetPos,3));sheetGeo.setAttribute('uv',new THREE.Float32BufferAttribute(sheetUv,2));sheetGeo.setIndex(sheetIdx);sheetGeo.computeVertexNormals();
+  const sheetMat=new THREE.MeshStandardMaterial({color:0xc5bda9,roughness:1,transparent:true,opacity:.82,side:THREE.DoubleSide,emissive:0x191814,emissiveIntensity:.16});
+  const sheet=new THREE.Mesh(sheetGeo,sheetMat);z.group.add(sheet);storyRef.collapseScreen=sheet;
+  const sheetRod=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,6.8,8),M.rust);sheetRod.rotation.z=Math.PI/2;sheetRod.position.set(0,3.58,-9.5);z.group.add(sheetRod);
+  for(const x of [-3.0,3.0]){const rope=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.62,6),M.darkWood);rope.position.set(x,3.88,-9.5);z.group.add(rope);const hook=new THREE.Mesh(new THREE.TorusGeometry(.055,.012,5,12),M.rust);hook.position.set(x,3.52,-9.5);z.group.add(hook);}
+  const projector=new THREE.Group();projector.position.set(0,.02,3.3);z.group.add(projector);storyRef.collapseProjector=projector;
+  const projectorCase=roundedHousing(.82,.48,.58,.13,mat(0x4b483f,.58,{metalness:.46}),.04);projectorCase.position.y=.93;projector.add(projectorCase);
+  const projectorTop=roundedHousing(.68,.10,.48,.06,M.darkWood,.02);projectorTop.position.y=1.22;projector.add(projectorTop);
+  const lensTube=new THREE.Mesh(new THREE.CylinderGeometry(.105,.14,.36,20),M.metal);lensTube.rotation.x=Math.PI/2;lensTube.position.set(0,1.0,-.45);projector.add(lensTube);
+  const lensGlass=new THREE.Mesh(new THREE.CircleGeometry(.092,20),new THREE.MeshBasicMaterial({color:0xd6d0b6,transparent:true,opacity:.6}));lensGlass.position.set(0,1.0,-.64);projector.add(lensGlass);
+  for(const x of [-.23,.23]){
+    const reel=new THREE.Group();reel.position.set(x,1.38,-.04);projector.add(reel);
+    const flange=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.055,32),M.metal);flange.rotation.x=Math.PI/2;reel.add(flange);
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(.22,.018,5,28),M.gold);reel.add(rim);
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.08,16),M.black);hub.rotation.x=Math.PI/2;reel.add(hub);
+    for(let k=0;k<6;k++){const spoke=new THREE.Mesh(new THREE.BoxGeometry(.025,.36,.018),M.rust);spoke.position.z=.033;spoke.rotation.z=k*Math.PI/3;reel.add(spoke);}
+    (storyRef.projectorReels||(storyRef.projectorReels=[])).push(reel);
+  }
+  const beamMat=new THREE.MeshBasicMaterial({color:0xbdbba7,transparent:true,opacity:.055,depthWrite:false,side:THREE.DoubleSide});
+  const beam=new THREE.Mesh(new THREE.ConeGeometry(2.15,8.0,24,1,true),beamMat);beam.rotation.x=-Math.PI/2;beam.position.set(0,1.0,-.7);projector.add(beam);storyRef.projectorBeam=beam;
+  for(let row=0;row<2;row++)for(const x of [-2.4,0,2.4]){
+    const zz=6.2+row*2.1;addWoodChair(z.group,x,zz,Math.PI,.88);
+    const audience=new THREE.Group();audience.position.set(x,.55,zz-.18);z.group.add(audience);
+    const silhouette=mat(0x0d0f0d,.98),coat=new THREE.Mesh(new THREE.CapsuleGeometry(.17,.46,4,7),silhouette);coat.position.y=.08;audience.add(coat);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.13,8,7),silhouette);head.position.y=.66;head.scale.set(.88,1.15,.82);audience.add(head);
+    for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.27,3,5),silhouette);arm.position.set(side*.20,.12,.02);audience.add(arm);}
+  }
+  const screenMarker=new THREE.Mesh(new THREE.SphereGeometry(.14,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));screenMarker.position.set(0,.25,6.9);z.group.add(screenMarker);
+  z.interactables.push({id:'collapse-screening',type:'event',object:screenMarker,point:screenMarker.position,radius:3.1,prompt:'[ E ] TAKE YOUR SEAT',run:startCollapseScreening});
   // The room contains manifestos that contradict each other, by design.
   // The cult leader is hidden at the far end; his face is turned away until spoken to.
   const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI; if (leader.head) leader.head.material = headMaterial();leader.dialogue={line:'I am not the leader. I am the first to understand that the room was not empty: we were taking up too much space.',choices:['Remove the tape.','Give me your place.'],replies:['There is no tape to remove. The machine turns without a reel.','The place is not mine. It is what remains when you give up your name.']};
@@ -2868,6 +2904,24 @@ function endCorradoTeaScene(){
   storyScene=null;dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
   showToast('THE FIRST IS GONE. THE HOUSE IS NOT EMPTY.');
 }
+function startCollapseScreening(){
+  if(storyFlags.has('spectacle-seen')||storyScene||gameEnded)return;
+  keys.clear();controls.unlock();dialogueOpen=false;
+  storyScene={type:'screening',t:0,dur:19.5,i:0,flashA:false,flashB:false,sound:false,lines:[
+    [.6,'Voice: A sheet, a projector, thirteen chairs. The room has built a cinema out of its own furniture.'],
+    [3.2,'Voice: The image arrives first. A body falls behind the white cloth.'],
+    [6.2,'Tobia: I am in the audience. I do not get up.'],
+    [9.0,'Voice: They used to cheer when something fell. The sound came later, and made the image belong to somebody.'],
+    [13.2,'Tobia: I know what I am watching. I keep watching.'],
+    [16.4,'Voice: There are no villains in the seats. Only people who came to see.']
+  ]};
+}
+function endCollapseScreening(){
+  storyFlags.add('spectacle-seen');storyFlags.add('complicit');
+  journal.push({id:'collapse-screening',title:'The Audience',description:'The family watched collapses on a bedsheet as if they were a match. The image came first; the sound arrived later. You remained seated until the reel stopped.',kind:'witness account',zone:'abattoir'});
+  updateJournalCount();updateMissions();storyScene=null;camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
+  showToast('THE REEL HAS STOPPED. YOU ARE STILL IN YOUR SEAT.');
+}
 function startDarioEavesdrop(){
   if(storyFlags.has('heard-dario-plan')||storyScene||gameEnded)return;
   if(!storyFlags.has('talked-ines')||!storyFlags.has('talked-ottavio')){showToast('SPEAK WITH INES AND OTTAVIO FIRST.');return;}
@@ -2945,6 +2999,13 @@ function updateStoryScene(dt, t) {
   const s = storyScene; s.t += dt;
   while (s.i < s.lines.length && s.t >= s.lines[s.i][0]) { storyLine(s.lines[s.i][1]); s.i++; }
   if (s.type === 'hold') { if (s.t >= s.dur) storyScene = null; }
+  else if(s.type==='screening'){
+    camera.position.set(0,1.68,5.8);camera.lookAt(0,2.0,-9.45);
+    if(s.t>=4.6&&!s.flashA){s.flashA=true;flashFragment('collapse',135);glitchPulse=Math.max(glitchPulse,.8);}
+    if(s.t>=8.2&&!s.flashB){s.flashB=true;flashFragment('tea',125);glitchPulse=Math.max(glitchPulse,1.0);}
+    if(s.t>=11.5&&!s.sound){s.sound=true;audio?.mechanicalNoise(.28,380,.8,.12,0);audio?.mechanicalTone(92,35,1.6,'sawtooth',.075,0);}
+    if(s.t>=s.dur)endCollapseScreening();
+  }
   else if(s.type==='dario-eavesdrop'){
     if(s.t>=8.8&&!s.flash){s.flash=true;flashFragment('collapse',125);audio?.mechanicalNoise(.18,380,.8,.09,0);}
     if(s.t>=s.dur)endDarioEavesdrop();
