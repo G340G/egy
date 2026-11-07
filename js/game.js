@@ -7,6 +7,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 
 // ---- v3.2 shared state: declared before any zone is built ----
+const TEST_NO_ENEMIES = true; // Test build: hostile entities cannot appear, pursue, or kill the player.
 const lowFx = new URLSearchParams(location.search).has('lowfx');
 const candles = [], rituals = [], tools = new Set(), seenMissions = new Set(), chapterCardsShown = new Set();
 let HEAD_TEX = null, JUMP_URL = null, PAINT_TEX = {}, atmo = { zone: null, nodes: [], timers: [], gain: null }, zoomPulse2 = 0;
@@ -1597,7 +1598,7 @@ function enterZone(name, spawn) {
   scene.fog = zone.fog || new THREE.FogExp2(zone.fogColor, zone.density);
   scene.background.set(zone.fogColor);
   $('location').textContent = ({ road: 'FOG ROAD', home: 'THE HOUSE / THIRTEEN PLACES', church: 'THE DECONSECRATED CHURCH', ruin: 'THE EMPTY HOUSE', cellar: 'THE CELLAR / 14-B', darkroom: 'THE DARK ROOM / 14-B', abattoir: 'THE SLAUGHTERHOUSE / THE VOID ROOM', forest: 'THE CANAL FOREST' })[name];
-  glitchPulse = Math.max(glitchPulse, .42); audio?.stinger(.32); audio?.setZone(name); if(name==='abattoir'){fear=Math.min(1,fear+.19);audio?.mechanicalEvent('hoist');} if(name==='church' && collected.size>=2 && !scenePlayed) showToast('THE BELL ROPE IS WET.'); if(name==='cellar'||name==='darkroom'){fear=Math.min(1,fear+.18);} if(name==='darkroom'){darkroomHunt.active=!storyFlags.has('darkroom-cleared');if(!storyFlags.has('darkroom-entered')){storyFlags.add('darkroom-entered');darkroomHunt.elapsed=0;darkroomHunt.reappear=3.2;startMonologue(['Corrado: The lamp is not a weapon. It is a question you can only ask in one direction.','Voice: The room is full. You cannot see what it contains.','Corrado: Find what the tape cannot carry. Do not mistake being watched for being seen.'],13);}}
+  glitchPulse = Math.max(glitchPulse, .42); audio?.stinger(.32); audio?.setZone(name); if(name==='abattoir'){fear=Math.min(1,fear+.19);audio?.mechanicalEvent('hoist');} if(name==='church' && collected.size>=2 && !scenePlayed) showToast('THE BELL ROPE IS WET.'); if(name==='cellar'||name==='darkroom'){fear=Math.min(1,fear+.18);} if(name==='darkroom'){darkroomHunt.active=!TEST_NO_ENEMIES&&!storyFlags.has('darkroom-cleared');if(TEST_NO_ENEMIES&&storyRef.darkroomHunter?.object)storyRef.darkroomHunter.object.visible=false;if(!storyFlags.has('darkroom-entered')){storyFlags.add('darkroom-entered');darkroomHunt.elapsed=0;darkroomHunt.reappear=3.2;startMonologue(['Corrado: The lamp is not a weapon. It is a question you can only ask in one direction.','Voice: The room is full. You cannot see what it contains.','Corrado: Find what the tape cannot carry. Do not mistake being watched for being seen.'],13);}}
   showToast(({ road: 'THE ROAD IS NOT WHERE YOU LEFT IT', home: 'NO ONE ASKED YOUR NAME', church: 'THE NAVE IS LONGER FROM THE INSIDE', ruin: 'SOMEONE IS WAITING BY THE TELEPHONE', cellar: 'THE ROOM HAS KEPT ITS HEAT', darkroom: 'THE DARK HAS BEEN ARRANGED BY HAND', forest: 'THE FOREST KEEPS YOUR POSITION', abattoir: 'HERE THE FLESH HAS A LONG MEMORY' })[name]);
   placeStalker(name); showChapterCard(name);
 }
@@ -2394,7 +2395,7 @@ function makeStalker() {
 }
 function placeStalker(name) {
   storyFlags.add(`visited-${name}`);
-  if (!stalkerEligible(name)) { if (stalker) stalker.visible = false; stalkerZone = null; return; }
+  if (TEST_NO_ENEMIES || !stalkerEligible(name)) { if (stalker) stalker.visible = false; stalkerZone = null; presence = 0; nearFlag = false; return; }
   if (!stalker) stalker = makeStalker();
   const z = zones[name];
   if (stalker.parent !== z.group) { if (stalker.parent) stalker.parent.remove(stalker); z.group.add(stalker); }
@@ -2405,6 +2406,7 @@ function placeStalker(name) {
   stalker.visible = true; stalkerZone = name; presenceWarned = false; presence = 0;
 }
 function updatePresence(dt, t) {
+  if (TEST_NO_ENEMIES) { if (stalker) stalker.visible = false; presence = 0; nearFlag = false; return; }
   const active = stalker && stalker.visible && stalkerZone === currentZone && gameStarted && !gameEnded && !listeningPending && !cultFateActive && !dialogueOpen && !journalOpen;
   if (!active) { presence = Math.max(0, presence - dt * .8); return; }
   const p = playerAnchor.position;
@@ -3116,7 +3118,7 @@ function updateStoryScene(dt, t) {
 function endCarScene() {
   storyScene = null;
   playerAnchor.position.set(0, 0, -42);
-  const ch = storyRef.chaser; ch.visible = true; ch.position.set(2.5, 0, -40);
+  const ch = storyRef.chaser; ch.visible = !TEST_NO_ENEMIES; ch.position.set(2.5, 0, -40);
   chaseState = { t: 0, next: 2, lunge: 0 };
   storyLine('Walk back to the lamp. It is the only light in the forest, and it is pointing at you.');
   showToast('RUN. THE LAMP IS THE STARTING POINT.');
@@ -3126,6 +3128,7 @@ function endCarScene() {
 function updateChase(dt, t) {
   if (currentZone !== 'forest') { chaseState = null; storyRef.chaser.visible = false; return; }
   const ch = storyRef.chaser, p = playerAnchor.position;
+  if (TEST_NO_ENEMIES) { ch.visible = false; if (Math.hypot(p.x, p.z) < 2.6) escapeForest(); return; }
   const dx = p.x - ch.position.x, dz = p.z - ch.position.z, d = Math.hypot(dx, dz) || .001;
   // Retain contact danger, but never move or rotate the figure toward the player.
   if (d < 1.3) { chaseState = null; triggerDeath('THE FOREST KEPT YOU'); return; }
@@ -3139,6 +3142,7 @@ function escapeForest() {
   updateMissions();
 }
 function updateDarkroomHunt(dt,t){
+  if (TEST_NO_ENEMIES) { if (storyRef.darkroomHunter?.object) storyRef.darkroomHunter.object.visible = false; darkroomHunt.active = false; return; }
   if(currentZone!=='darkroom'||!darkroomHunt.active||storyFlags.has('darkroom-cleared')||gameEnded||dialogueOpen||journalOpen||storyScene)return;
   const npc=storyRef.darkroomHunter;if(!npc?.object)return;
   const p=playerAnchor.position,h=npc.object.position;
