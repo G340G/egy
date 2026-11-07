@@ -1938,6 +1938,7 @@ function beginListening(){
   camera.position.set(0,1.63,0);camera.rotation.z=0;cameraDirector.active=false;cameraDirector.cooldown=999;playerRig.visible=false;occludeMat.opacity=0;occludeRight.material.opacity=0;
   $('hud').classList.add('hidden-hud');$('prompt').classList.remove('visible');
   if(audio?.master&&audio.ctx)audio.master.gain.setTargetAtTime(.26,audio.ctx.currentTime,1.2);
+  flashFragment('room-tone',175);audio?.mechanicalNoise(5.2,225,.7,.075,0);audio?.mechanicalTone(41,41,5.4,'sine',.028,0);
   cultRoster.filter(n=>n.fate==='present').forEach((npc,i)=>queueCultFate('the turn of the record',npc,isProgressCriticalCultist(npc)?'vanish':(i%4===0?'collapse':'vanish')));
   showToast('THIRTEEN NAMES. THE ROOM WANTS TO WATCH THEM LEAVE.');
   speakVoice('Do not lower your eyes. The room must empty before you can choose.','RECORDING 14-B');
@@ -1955,7 +1956,7 @@ function finishListening(){
     [4.8,'Voice: The fog is not a veil. It is what remains when a name stops insisting on its outline.'],
     [9.4,'The First: You see? Nothing has been taken from you. You are only returning what you have been calling yourself.'],
     [14.2,'Voice: The reeds bend toward the hollow. The trees make room without asking what has left.'],
-    [19,'Voice: For a moment, the world has no witness. It does not stop growing.']
+    [19,'Tobia: I heard the room. I cannot tell you whether The White was the room, or what remained inside the machine.']
   ]};audio?.voidBloom();
 }
 function revealEndingChoices(){
@@ -2339,7 +2340,7 @@ function addDigSite(group, x, z) {
   const bar = new THREE.Mesh(new THREE.BoxGeometry(.5, .08, .08), mat(0x4a3420, 1)); bar.position.set(.5, .62, 1.9); root.add(bar);
   return { id: 'dig_grave', type: 'dig', object: root, point: new THREE.Vector3(x + .5, .3, z + 1.9), radius: 2.6, prompt: '[ E ] HOLD — DIG' };
 }
-function digAvailable() { return tools.has('shovel') && !digDone; }
+function digAvailable() { return tools.has('shovel') && storyFlags.has('heard-dario-plan') && !digDone; }
 function syncDigSite() {
   if (!digEntry) return;
   const list = zones.road.interactables; const has = list.includes(digEntry);
@@ -2368,7 +2369,7 @@ function buildStoryExtras() {
   buildStory();
   buildCinematicExtras();
   digEntry = addDigSite(zones.road.group, -22, 18);
-  addTool(zones.ruin.group,4.2,-4.6,'shovel','Shovel','The handle is damp and smooth, as if many hands have gripped it in the dark.');
+  const shovel=addTool(zones.ruin.group,4.2,-4.6,'shovel','Shovel','The handle is damp and smooth, as if many hands have gripped it in the dark.');shovel.requiresFlag='heard-dario-plan';shovel.blockedHint='Listen through the thin wall before taking the shovel.';
   syncDigSite();
 }
 // The approaching The First: he walks toward you whenever you are not looking at him.
@@ -2425,7 +2426,7 @@ const MISSIONS=[
  {id:'house',text:'Reach the farmhouse by following the gravel path.',done:()=>storyFlags.has('visited-home')},
  {id:'home-talk',text:'Speak with Ines and Ottavio. The things they know are not written down.',when:()=>storyFlags.has('visited-home'),done:()=>storyFlags.has('talked-ines')&&storyFlags.has('talked-ottavio')},
  {id:'wall',text:'Listen through the thin wall. Someone is giving Dario a task.',when:()=>storyFlags.has('talked-ines')&&storyFlags.has('talked-ottavio'),done:()=>storyFlags.has('heard-dario-plan')},
- {id:'shovel',text:'Find a shovel in the ruined house, beside the collapsed wall.',when:()=>storyFlags.has('talked-ines')&&storyFlags.has('talked-ottavio'),done:()=>tools.has('shovel')},
+ {id:'shovel',text:'Find a shovel in the ruined house, beside the collapsed wall.',when:()=>storyFlags.has('heard-dario-plan'),done:()=>tools.has('shovel')},
  {id:'grave',text:'Dig beneath the willow. Hold E until the earth gives way.',when:()=>tools.has('shovel'),done:()=>storyFlags.has('grave-revealed')},
  {id:'widow',text:'Question the Widow in the ruined house about the 1977 recording.',when:()=>storyFlags.has('grave-revealed'),done:()=>storyFlags.has('talked-widow')},
  {id:'remo',text:'Speak with Don Remo. Ask why the cross has been turned around.',when:()=>collected.size>=2,done:()=>storyFlags.has('talked-remo')},
