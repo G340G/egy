@@ -868,6 +868,27 @@ function buildCombineHarvester(group,x,z,scale=1){
   }
   root.userData.body=chassis;return root;
 }
+function buildSoupBowl(group,x,y,z){
+  const root=new THREE.Group();root.position.set(x,y,z);group.add(root);
+  const ceramic=mat(0xb3a991,.34,{metalness:.04}),broth=mat(0x5a3822,.30,{emissive:0x281207,emissiveIntensity:.08});
+  const profile=[new THREE.Vector2(.05,0),new THREE.Vector2(.19,.015),new THREE.Vector2(.25,.10),new THREE.Vector2(.27,.16),new THREE.Vector2(.25,.18),new THREE.Vector2(.23,.16)];
+  const bowl=new THREE.Mesh(new THREE.LatheGeometry(profile,28),ceramic);root.add(bowl);
+  const soup=new THREE.Mesh(new THREE.CircleGeometry(.235,28),broth);soup.rotation.x=-Math.PI/2;soup.position.y=.165;root.add(soup);
+  for(let i=0;i<4;i++){const herb=new THREE.Mesh(new THREE.SphereGeometry(.018,6,5),mat(0x687148,.95));herb.position.set((Math.random()-.5)*.28,.17,(Math.random()-.5)*.28);root.add(herb);}
+  const spoon=new THREE.Group();spoon.position.set(.23,.18,.06);spoon.rotation.z=-.18;root.add(spoon);
+  const handle=new THREE.Mesh(new THREE.CylinderGeometry(.012,.018,.34,8),mat(0x8b8c82,.42,{metalness:.6}));handle.position.y=.16;handle.rotation.z=.25;spoon.add(handle);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.052,10,7),mat(0x8b8c82,.42,{metalness:.6}));head.scale.set(.7,.32,1.2);head.position.set(-.043,.32,0);spoon.add(head);
+  const saucer=new THREE.Mesh(new THREE.TorusGeometry(.30,.018,5,28),ceramic);saucer.rotation.x=Math.PI/2;saucer.position.y=.005;root.add(saucer);return root;
+}
+function buildTrowel(group,x,y,z){
+  const root=new THREE.Group();root.position.set(x,y,z);group.add(root);
+  const bladeShape=new THREE.Shape();bladeShape.moveTo(0,0);bladeShape.lineTo(.16,.30);bladeShape.quadraticCurveTo(.20,.39,.15,.46);bladeShape.lineTo(-.15,.46);bladeShape.quadraticCurveTo(-.20,.39,-.16,.30);bladeShape.closePath();
+  const bladeGeo=new THREE.ExtrudeGeometry(bladeShape,{depth:.025,bevelEnabled:true,bevelThickness:.012,bevelSize:.01,bevelSegments:2,steps:1});bladeGeo.computeVertexNormals();
+  const blade=new THREE.Mesh(bladeGeo,mat(0x73766f,.42,{metalness:.68}));blade.position.y=.13;root.add(blade);
+  const tang=new THREE.Mesh(new THREE.CylinderGeometry(.025,.032,.22,8),mat(0x85877f,.42,{metalness:.68}));tang.position.y=.56;root.add(tang);
+  const handle=new THREE.Mesh(new THREE.CylinderGeometry(.055,.045,.34,10),mat(0x553b28,.94,{map:TEX.wood}));handle.position.y=.82;root.add(handle);
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(.055,8,6),M.darkWood);cap.position.y=1.0;root.add(cap);return root;
+}
 function buildCRT(group,x,y,z){
   const root=new THREE.Group();root.position.set(x,y,z);group.add(root);
   const caseMat=mat(0x292720,.72,{map:TEX.wood,bumpScale:.025}),bezelMat=mat(0x5a5142,.65,{metalness:.22});
@@ -1227,6 +1248,8 @@ function buildHome() {
   });
   const anna=addCultist(z,-5.2,1.2,'Anna',0x4a4035,0,'The soup is still warm. There is a place for a man who has been dead for forty years. Do not clear it.',['Will he come back?','Why keep serving an empty place?'],['No. But the bowl must be ready.','If I stop, the table will remember that he is gone. I cannot be the one to tell it.']);
   anna.object.position.set(-5.2,0,1.2);anna.point=anna.object.position;
+  buildSoupBowl(z.group,-5.18,.84,1.23);const trowel=buildTrowel(z.group,-4.55,.82,1.18);trowel.rotation.z=1.18;
+  addLook(z.group,-4.85,1.05,1.5,'The soup over the trowel','A bowl of soup sits over a mason’s trowel. You eat while the tool that could disturb a grave lies beneath the tableware. The broth is warm. The handle is wet.');
   const dario=addCultist(z,-8.0,-6.1,'Dario',0x302d28,1,'I believe in The White. I believe in it more than anyone in this house. That is why they avoid looking at me.',['Who leads the rite?','Why do they fear your belief?'],['There is no leader. Only a man who knows where to stand.','Because they are performing an emptiness they do not possess. I am not performing.']);dario.isLeader=true;
   const sergio=addCultist(z,-.8,-6.5,'Sergio',0x4a443a,0,'I stopped believing years ago. I stayed for the company. There was nowhere else to eat in peace.',['Then why not leave?','Did you know what happened in 1977?'],['Loneliness is a door that opens inward. You can walk through it and still be in the same room.','I heard the plan for Dario through the wall. I did not tell him. That is when I belonged here.']);
   addCultist(z,7.9,-6.2,'Marta',0x51483d,0,'I engrave my memoirs with a sunshine that was never there. The gold in the photograph is a lie. I remember the colour, not the day.',['Which memory is true?','Why do you keep writing?'],['The one that hurts the least is usually the one I invented.','If I stop, the memories begin to move without me.']);
@@ -1240,6 +1263,8 @@ function buildHome() {
   // A staged domestic killing: the room offers the player a choice to look.
   const annaMarker=new THREE.Mesh(new THREE.BoxGeometry(.22,.08,.22),M.clue);annaMarker.position.set(-5.2,.12,1.2);z.group.add(annaMarker);
   z.interactables.push({id:'anna_scene_trigger',type:'event',object:annaMarker,point:annaMarker.position,radius:3.2,prompt:'[ E ] LOOK AT THE EMPTY PLACE',run:()=>triggerAnnaScene(z,annaMarker)});
+  const wallEar=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));wallEar.position.set(-9.25,.2,-4.9);z.group.add(wallEar);
+  z.interactables.push({id:'dario-wall-listen',type:'event',object:wallEar,point:wallEar.position,radius:2.8,prompt:'[ E ] LISTEN THROUGH THE WALL',requiresFlag:'talked-ines',blockedHint:'First, speak with Ines and Ottavio.',run:startDarioEavesdrop});
   // Evidence in plain sight, once you stop looking for the album.
   addClueMesh(z.group,new THREE.Vector3(-5.2,1.1,2.0),'Seating List','A list of thirteen names. Beneath them, a fourteenth line has been erased so forcefully that it has scored the paper.','list','paper',{requiresFlag:'talked-ines',blockedHint:'Speak with Ines before examining the seating list.'});
   addClueMesh(z.group,new THREE.Vector3(5.8,1.45,-5.0),'Tuning Fork','A tuning fork. A=415 is engraved on the handle. The note does not match the one in your head.','fork','metal',{requiresFlag:'talked-ottavio',blockedHint:'Speak with Ottavio before examining the tuning fork.'});
@@ -2399,6 +2424,7 @@ function updatePresence(dt, t) {
 const MISSIONS=[
  {id:'house',text:'Reach the farmhouse by following the gravel path.',done:()=>storyFlags.has('visited-home')},
  {id:'home-talk',text:'Speak with Ines and Ottavio. The things they know are not written down.',when:()=>storyFlags.has('visited-home'),done:()=>storyFlags.has('talked-ines')&&storyFlags.has('talked-ottavio')},
+ {id:'wall',text:'Listen through the thin wall. Someone is giving Dario a task.',when:()=>storyFlags.has('talked-ines')&&storyFlags.has('talked-ottavio'),done:()=>storyFlags.has('heard-dario-plan')},
  {id:'shovel',text:'Find a shovel in the ruined house, beside the collapsed wall.',when:()=>storyFlags.has('talked-ines')&&storyFlags.has('talked-ottavio'),done:()=>tools.has('shovel')},
  {id:'grave',text:'Dig beneath the willow. Hold E until the earth gives way.',when:()=>tools.has('shovel'),done:()=>storyFlags.has('grave-revealed')},
  {id:'widow',text:'Question the Widow in the ruined house about the 1977 recording.',when:()=>storyFlags.has('grave-revealed'),done:()=>storyFlags.has('talked-widow')},
@@ -2840,6 +2866,23 @@ function endCorradoTeaScene(){
   storyScene=null;dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
   showToast('THE FIRST IS GONE. THE HOUSE IS NOT EMPTY.');
 }
+function startDarioEavesdrop(){
+  if(storyFlags.has('heard-dario-plan')||storyScene||gameEnded)return;
+  if(!storyFlags.has('talked-ines')||!storyFlags.has('talked-ottavio')){showToast('SPEAK WITH INES AND OTTAVIO FIRST.');return;}
+  keys.clear();controls.unlock();
+  storyScene={type:'dario-eavesdrop',t:0,dur:12.5,i:0,flash:false,lines:[
+    [.6,'Voice through the wall: Give Dario a task worthy of his belief.'],
+    [3.5,'Dario: Tell me where to stand.'],
+    [6.7,'Tobia: You hear every word. You do not open the door.'],
+    [9.4,'Voice: Silence is not outside the act. It is the place you choose within it.']
+  ]};
+}
+function endDarioEavesdrop(){
+  storyFlags.add('heard-dario-plan');storyFlags.add('complicit');
+  journal.push({id:'dario-plan',title:'The Words Through the Wall',description:'You heard the instruction given to Dario. You could have opened the door. You did not. The silence was not an absence of action; it was the action you took.',kind:'witness account',zone:'home'});
+  updateJournalCount();updateMissions();storyScene=null;camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);controls.lock();
+  flashFragment('collapse',135);showToast('YOU HEARD IT. YOU DID NOTHING.');
+}
 function storyLine(text) {
   const m = /^([^:]+):\s*/.exec(text);
   $('speaker').textContent = m ? m[1].toUpperCase() : 'VOICE';
@@ -2900,6 +2943,10 @@ function updateStoryScene(dt, t) {
   const s = storyScene; s.t += dt;
   while (s.i < s.lines.length && s.t >= s.lines[s.i][0]) { storyLine(s.lines[s.i][1]); s.i++; }
   if (s.type === 'hold') { if (s.t >= s.dur) storyScene = null; }
+  else if(s.type==='dario-eavesdrop'){
+    if(s.t>=8.8&&!s.flash){s.flash=true;flashFragment('collapse',125);audio?.mechanicalNoise(.18,380,.8,.09,0);}
+    if(s.t>=s.dur)endDarioEavesdrop();
+  }
   else if(s.type==='pino-combine'){
     const pino=storyRef.pino,machine=storyRef.combine;
     camera.position.set(-37.2,6.8,-27.8);camera.lookAt(-51,1.0,-39.5);
