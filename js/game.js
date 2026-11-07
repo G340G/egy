@@ -1759,36 +1759,36 @@ function completeDarkroomIfReady(){
   updateMissions();
 }
 function updateProgress() {
-  const n = collected.size; $('evidence-count').textContent = `${n} / ${clueCount} TRACCE`;
+  const n = collected.size; $('evidence-count').textContent = `${n} / ${clueCount} CLUES`;
   $('inventory-count').textContent = String(n);
   $('progress-fill').style.width = `${n / clueCount * 100}%`;
-  if (n === 0) $('objective-text').textContent = 'Trova la casa. Cerca il luogo dove vengono appese le bestie.';
-  else if (n < 7) $('objective-text').textContent = 'Raccogli 7 tracce per aprire la Casa delle Bestie. Segui il passaggio di assi verso est.';
+  if (n === 0) $('objective-text').textContent = 'Find the farmhouse. Look for the place where the animals are hung.';
+  else if (n < 7) $('objective-text').textContent = 'Collect 7 clues to open the House of Beasts. Follow the boardwalk east.';
   else if (n === 7) $('objective-text').textContent = currentZone === 'abattoir'
-    ? '7 / 8 TRACCE — Cerca il Registro della macelleria sul lato nord-ovest del macello.'
-    : '7 / 8 TRACCE — La Casa delle Bestie è a est, in fondo al passaggio di assi. Il Registro della macelleria è l’ottava traccia.';
+    ? '7 / 8 CLUES — Find the slaughterhouse ledger on the north-west side.'
+    : '7 / 8 CLUES — The House of Beasts lies east, beyond the boardwalk. The slaughterhouse ledger is the final clue.';
   else $('objective-text').textContent = currentZone === 'cellar'
-    ? '8 / 8 TRACCE — Avvicinati al piatto nero e premi E per ascoltare Il Bianco.'
+    ? '8 / 8 CLUES — Approach the black platter and press E to listen to The White.'
     : currentZone === 'home'
-      ? '8 / 8 TRACCE — La copertura della botola è stata rimossa. Scendi in cantina.'
-      : '8 / 8 TRACCE — Torna alla casa principale e scendi dalla botola in cucina.';
+      ? '8 / 8 CLUES — The kitchen hatch is uncovered. Descend to the cellar.'
+      : '8 / 8 CLUES — Return to the farmhouse and descend through the kitchen hatch.';
   if (abattoirEntrance) {
     const unlocked = n >= (abattoirEntrance.requiredClues || 7);
     abattoirEntrance.locked = !unlocked;
     abattoirEntrance.prompt = unlocked
-      ? '[ E ] ENTRA — LA CASA DELLE BESTIE'
-      : `[ E ] BLOCCATO — SERVONO 7 TRACCE (${n}/7)`;
+      ? '[ E ] ENTER — THE HOUSE OF BEASTS'
+      : `[ E ] LOCKED — 7 CLUES REQUIRED (${n}/7)`;
     if (abattoirEntrance.slab) abattoirEntrance.slab.material = unlocked ? M.wood : M.rust;
   }
   if (zones.home?.hatchCover) zones.home.hatchCover.visible = n < clueCount;
   if (cellarDoor) {
     cellarDoor.locked = n < clueCount;
-    cellarDoor.prompt = n < clueCount ? `[ E ] BLOCCATO — MANCA ${clueCount - n} TRACCE` : '[ E ] SCENDI — LA CANTINA';
+    cellarDoor.prompt = n < clueCount ? `[ E ] LOCKED — ${clueCount - n} CLUES MISSING` : '[ E ] DESCEND — THE CELLAR';
     if (cellarDoor.slab) cellarDoor.slab.material = n < clueCount ? M.rust : M.wood;
   }
-  $('journal-total').textContent = `${journal.length} OGGETTI CATALOGATI`;
+  $('journal-total').textContent = `${journal.length} ITEMS CATALOGUED`;
 }
-function updateJournalCount(){ $('journal-total').textContent = `${journal.length} OGGETTI CATALOGATI`; $('inventory-count').textContent=String(journal.length); }
+function updateJournalCount(){ $('journal-total').textContent = `${journal.length} ITEMS CATALOGUED`; $('inventory-count').textContent=String(journal.length); }
 function collectClue(item) {
   if (collected.has(item.id)) return;
   if (item.requiresFlag && !storyFlags.has(item.requiresFlag)) { showToast(item.blockedHint || 'Speak with the relevant person first.'); return; }
@@ -1799,8 +1799,8 @@ function collectClue(item) {
   zone.group.remove(item.object);
   zone.interactables.splice(zone.interactables.indexOf(item), 1);
   dread = Math.min(1, dread + .13); glitchPulse = Math.max(glitchPulse, .85); audio.stinger(.85);
-  showToast(`TRACCIA REGISTRATA // ${item.title.toUpperCase()}`); updateProgress();
-  if (collected.size === clueCount) showToast('LA CASA HA FINITO DI CONTARE. LA BOTOLA È APERTA.');
+  showToast(`CLUE RECORDED // ${item.title.toUpperCase()}`); updateProgress();
+  if (collected.size === clueCount) showToast('THE HOUSE HAS FINISHED COUNTING. THE HATCH IS OPEN.');
   const next=cultRoster.find(n=>n.fate==='present'&&!isProgressCriticalCultist(n));if(next)queueCultFate(`trace ${collected.size}`,next,collected.size%3===0?'collapse':'vanish');
 }
 function speakVoice(text, npcName = '') {
@@ -1914,21 +1914,21 @@ function beginListening(){
   $('hud').classList.add('hidden-hud');$('prompt').classList.remove('visible');
   if(audio?.master&&audio.ctx)audio.master.gain.setTargetAtTime(.26,audio.ctx.currentTime,1.2);
   cultRoster.filter(n=>n.fate==='present').forEach((npc,i)=>queueCultFate('the turn of the record',npc,isProgressCriticalCultist(npc)?'vanish':(i%4===0?'collapse':'vanish')));
-  showToast('TREDICI NOMI. LA STANZA LI VUOLE VEDERE USCIRE.');
-  speakVoice('Non abbassare gli occhi. La stanza deve svuotarsi prima che tu possa scegliere.','REGISTRAZIONE 14-B');
+  showToast('THIRTEEN NAMES. THE ROOM WANTS TO WATCH THEM LEAVE.');
+  speakVoice('Do not lower your eyes. The room must empty before you can choose.','RECORDING 14-B');
   if(!cultFateActive && cultFateQueue.length===0) finishListening();
 }
 function finishListening(){
   if(!listeningPending)return;listeningPending=false;gameEnded=true;controls.unlock();keys.clear();$('hud').classList.add('hidden-hud');
   $('ending-screen').classList.remove('active');$('ending-choices').classList.remove('visible');$('ending-result').classList.remove('visible');
-  $('ending-title').textContent='Il Bianco non è stato ascoltato.';$('ending-copy').textContent='Il silenzio non è rimasto nella stanza.';$('ending-small').textContent='LA NEBBIA NON È UN CONFINE.';
+  $('ending-title').textContent='The White Was Not Heard.';$('ending-copy').textContent='The silence did not remain in the room.';$('ending-small').textContent='THE FOG IS NOT A BORDER.';
   playerAnchor.position.set(0,0,0);camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);
   const growth=storyRef.voidGrowth;if(growth){growth.visible=true;growth.scale.setScalar(.001);}
   if(audio?.master&&audio.ctx)audio.master.gain.setTargetAtTime(.34,audio.ctx.currentTime,1.4);
   storyScene={type:'ending',t:0,dur:22,i:0,switched:false,lines:[
     [.6,'Voice: The room does not become empty. It lends its emptiness to the weather.'],
     [4.8,'Voice: The fog is not a veil. It is what remains when a name stops insisting on its outline.'],
-    [9.4,'Il Primo: You see? Nothing has been taken from you. You are only returning what you have been calling yourself.'],
+    [9.4,'The First: You see? Nothing has been taken from you. You are only returning what you have been calling yourself.'],
     [14.2,'Voice: The reeds bend toward the hollow. The trees make room without asking what has left.'],
     [19,'Voice: For a moment, the world has no witness. It does not stop growing.']
   ]};audio?.voidBloom();
@@ -1936,7 +1936,7 @@ function finishListening(){
 function revealEndingChoices(){
   storyScene=null;$('subtitle-wrap').classList.remove('visible');$('ending-screen').classList.add('active');
   $('ending-title').textContent='Il Bianco non è stato ascoltato.';$('ending-copy').textContent='The turntable is still in the cellar. The forest has made a place the size of a person.';
-  $('ending-small').textContent='I TREDICI SONO USCITI. RESTA CIÒ CHE HAI LASCIATO.';$('ending-choices').classList.add('visible');
+  $('ending-small').textContent='THE THIRTEEN HAVE LEFT. WHAT YOU LEFT BEHIND REMAINS.';$('ending-choices').classList.add('visible');
   $('ending-testimony').style.display=storyFlags.has('grave-revealed')?'':'none';$('ending-result').classList.remove('visible');
 }
 
@@ -1998,8 +1998,8 @@ function updateDayNight(dt,t) {
     const sky=new THREE.Color().lerpColors(nightCol,day,sun);
     if(sun<.24)sky.lerp(dawn,Math.sin((.24-sun)/.24*Math.PI)*.24);
     scene.background.copy(sky);if(scene.fog?.color)scene.fog.color.copy(sky);
-    if(sun<.22&&lastDayAnnouncement!=='NIGHT'){lastDayAnnouncement='NIGHT';showToast('IL GIORNO HA LASCIATO IL CANALE.');}
-    else if(sun>.72&&lastDayAnnouncement!=='DAWN'){lastDayAnnouncement='DAWN';showToast('LA LUCE RITORNA SENZA IL SOLE.');}
+    if(sun<.22&&lastDayAnnouncement!=='NIGHT'){lastDayAnnouncement='NIGHT';showToast('DAYLIGHT HAS LEFT THE CANAL.');}
+    else if(sun>.72&&lastDayAnnouncement!=='DAWN'){lastDayAnnouncement='DAWN';showToast('LIGHT RETURNS WITHOUT THE SUN.');}
   }
   audio?.setDayNight(night);
   const wind=.5+Math.sin(t*.00013)*.5;
@@ -2028,7 +2028,7 @@ function updateCameraDirector(dt,t){
     (currentZone==='abattoir'&&Math.abs(p.x)<3.8&&p.z<-3.5);
   if(!dialogueOpen&&!journalOpen&&!cameraDirector.active&&cameraDirector.cooldown<=0&&((cover&&Math.random()<.012)|| (fear>.38&&elapsed>24&&Math.random()<.0009))){
     cameraDirector.active=true;cameraDirector.timer=1.35+Math.random()*1.7;cameraDirector.side=Math.random()<.5?-1:1;cameraDirector.phase=0;cameraDirector.roll=(Math.random()-.5)*.035;
-    showToast('LA REGISTRAZIONE NON È DIETRO I TUOI OCCHI.');
+    showToast('THE RECORDING IS NOT BEHIND YOUR EYES.');
   }
   if(cameraDirector.active){cameraDirector.timer-=dt;cameraDirector.phase=Math.min(1,cameraDirector.phase+dt*1.7);const fade=cameraDirector.timer<.7?Math.max(0,cameraDirector.timer/.7):1;const pull=cameraDirector.phase*fade;
     const desiredZ=2.1*pull, desiredX=cameraDirector.side*.34*pull;
@@ -2133,7 +2133,7 @@ controls.addEventListener('unlock', () => {
   if (gameStarted && !dialogueOpen && !journalOpen && !gameEnded) $('prompt').classList.remove('visible');
 });
 document.addEventListener('pointerlockerror', () => {
-  if (playerInputEnabled()) showToast('BLOCCO MOUSE NON DISPONIBILE — WASD ATTIVO, TRASCINA PER GUARDARE.');
+  if (playerInputEnabled()) showToast('MOUSE LOCK UNAVAILABLE — WASD WORKS, DRAG TO LOOK.');
 });
 
 window.addEventListener('mousedown', (e) => { if (e.button === 2 && playerInputEnabled()) rightMouse = true; });
@@ -2144,7 +2144,7 @@ window.addEventListener('keydown', (e) => {
   if (playerInputEnabled() && movementCodes.has(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'KeyF' && !e.repeat && playerInputEnabled()) toggleFlashlight();
-  if(e.code==='KeyQ' && playerInputEnabled() && !e.repeat){hiddenBreath=true;showToast('TRATTIENI IL FIATO. NON MUOVERTI.');}
+  if(e.code==='KeyQ' && playerInputEnabled() && !e.repeat){hiddenBreath=true;showToast('HOLD YOUR BREATH. DO NOT MOVE.');}
   if (e.code === 'KeyM' && !e.repeat) audio.toggle();
   if (e.code === 'Tab' && !e.repeat && !listeningPending) { e.preventDefault(); journalOpen ? closeJournal() : openJournal(); }
   if (e.code === 'KeyE' && playerInputEnabled() && activeTarget) inspectTarget(activeTarget);
@@ -2201,7 +2201,7 @@ function addCandle(group, x, y, z, lit = true, interactive = false) {
   const c={root,wax,flame,light,lit,destroyed:false,base:.9,phase:Math.random()*9};
   candles.push(c);
   if (interactive) {
-    const entry = { id: `candle_${x}_${z}`, type: 'candle', object: root, point: root.position, radius: 2.1, prompt: '[ E ] ACCENDI LA CANDELA', candle: c };
+    const entry = { id: `candle_${x}_${z}`, type: 'candle', object: root, point: root.position, radius: 2.1, prompt: '[ E ] LIGHT THE CANDLE', candle: c };
     c.entry = entry; group.userData.interactables.push(entry);
   }
   return c;
@@ -2284,7 +2284,7 @@ function updateRituals(t) {
 function addLook(group, x, y, z, title, text, radius = 2.4) {
   const marker = new THREE.Mesh(new THREE.SphereGeometry(.14, 8, 6), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
   marker.position.set(x, y, z); group.add(marker);
-  const entry = { id: `look_${title.toLowerCase().replace(/\W/g, '_')}`, type: 'look', object: marker, point: marker.position, radius, prompt: '[ E ] GUARDA DA VICINO', title, text };
+  const entry = { id: `look_${title.toLowerCase().replace(/\W/g, '_')}`, type: 'look', object: marker, point: marker.position, radius, prompt: '[ E ] LOOK CLOSER', title, text };
   group.userData.interactables.push(entry); return entry;
 }
 function showLook(item) {
@@ -2298,7 +2298,7 @@ function addTool(group, x, z, id, title, text) {
   const root = new THREE.Group(); root.position.set(x, 0, z); group.add(root);
   const handle = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 1.2, 6), mat(0x4a3424)); handle.rotation.z = Math.PI / 2; handle.position.y = .08; root.add(handle);
   const blade = new THREE.Mesh(new THREE.BoxGeometry(.28, .02, .34), mat(0x6e6e68, .4)); blade.position.set(.66, .08, 0); root.add(blade);
-  const entry = { id: `tool_${id}`, type: 'tool', tool: id, object: root, point: root.position, radius: 2.0, prompt: `[ E ] PRENDI — ${title.toUpperCase()}`, title, text };
+  const entry = { id: `tool_${id}`, type: 'tool', tool: id, object: root, point: root.position, radius: 2.0, prompt: `[ E ] TAKE — ${title.toUpperCase()}`, title, text };
   group.userData.interactables.push(entry); return entry;
 }
 function addDigSite(group, x, z) {
@@ -2312,7 +2312,7 @@ function addDigSite(group, x, z) {
   const mound = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), mat(0x2e2419, 1)); mound.scale.set(1.05, .12, .62); mound.position.set(.5, .04, 1.9); root.add(mound);
   const cross = new THREE.Mesh(new THREE.BoxGeometry(.08, .9, .08), mat(0x4a3420, 1)); cross.position.set(.5, .48, 1.9); root.add(cross);
   const bar = new THREE.Mesh(new THREE.BoxGeometry(.5, .08, .08), mat(0x4a3420, 1)); bar.position.set(.5, .62, 1.9); root.add(bar);
-  return { id: 'dig_grave', type: 'dig', object: root, point: new THREE.Vector3(x + .5, .3, z + 1.9), radius: 2.6, prompt: '[ E ] TIENI PREMUTO — SCAVA' };
+  return { id: 'dig_grave', type: 'dig', object: root, point: new THREE.Vector3(x + .5, .3, z + 1.9), radius: 2.6, prompt: '[ E ] HOLD — DIG' };
 }
 function digAvailable() { return tools.has('shovel') && !digDone; }
 function syncDigSite() {
@@ -2326,16 +2326,16 @@ function updateDig(dt) {
   if (!digEntry) return;
   const digging = activeTarget === digEntry && keys.has('KeyE') && playerInputEnabled() && digAvailable();
   digProgress = digging ? Math.min(1, digProgress + dt / 4.5) : Math.max(0, digProgress - dt * .6);
-  if (activeTarget === digEntry) digEntry.prompt = digProgress > 0 ? `[ E ] SCAVO… ${Math.round(digProgress * 100)}%` : '[ E ] TIENI PREMUTO — SCAVA';
+  if (activeTarget === digEntry) digEntry.prompt = digProgress > 0 ? `[ E ] DIGGING… ${Math.round(digProgress * 100)}%` : '[ E ] TIENI PREMUTO — SCAVA';
   if (digging && digProgress >= 1 && !digDone) { digDone = true; completeDig(); }
 }
 function completeDig() {
   storyFlags.add('grave-revealed');
-  journal.push({ id: 'grave-name', title: 'Il nome sulla croce', description: 'Sotto la terra smossa, una cassetta di metallo. Dentro, un foglio con un nome: Aurelio, direttore del coro. Accanto, una data e una sola parola: rimosso. Il nastro non si trova. Forse non è mai stato suonato.', kind: 'documento', zone: 'road' });
+  journal.push({id:'grave-name',title:'The Name on the Cross',description:'Beneath the disturbed earth is a metal case. Inside, a sheet bearing one name: Aurelio, choir director. Beside it, a date and a single word: removed. The tape is missing. Perhaps it was never played.',kind:'document',zone:'road'});
   updateJournalCount(); syncDigSite();
-  showToast('SOTTO LA TERRA C’È UN NOME. NON È QUELLO DI UN CANTORE.');
+  showToast('THERE IS A NAME UNDER THE EARTH. IT IS NOT A SINGER’S NAME.');
   audio.killSting(); glitchPulse = Math.max(glitchPulse, 1.1);
-  speakVoice('Aurelio. Il nome era sulla croce. Qualcuno l’ha seppellito prima degli altri.', 'REGISTRAZIONE 14-B');
+  speakVoice('Aurelio. The name was on the cross. Someone buried it before the others.', 'RECORDING 14-B');
   updateMissions();
 }
 function buildStoryExtras() {
@@ -2343,7 +2343,7 @@ function buildStoryExtras() {
   buildStory();
   buildCinematicExtras();
   digEntry = addDigSite(zones.road.group, -22, 18);
-  addTool(zones.ruin.group, 4.2, -4.6, 'shovel', 'Pala', 'Il manico è umido e liscio, come se molte mani l’avessero stretto nel buio.');
+  addTool(zones.ruin.group,4.2,-4.6,'shovel','Shovel','The handle is damp and smooth, as if many hands have gripped it in the dark.');
   syncDigSite();
 }
 // The approaching Il Primo: he walks toward you whenever you are not looking at him.
@@ -2391,9 +2391,9 @@ function updatePresence(dt, t) {
   presence += (target - presence) * Math.min(1, dt * 1.6);
   if (presence > .5 && !nearFlag) { nearFlag = true; audio.stinger(1); glitchPulse = Math.max(glitchPulse, .8); }
   if (presence < .3) nearFlag = false;
-  if (dist < 2.9 && !presenceWarned) { presenceWarned = true; showToast('NON VOLTARTI. È VICINO. NON GUARDARLO MENTRE SI AVVICINA.'); }
+  if (dist < 2.9 && !presenceWarned) { presenceWarned = true; showToast('DO NOT TURN AROUND. HE IS NEAR. DO NOT WATCH HIM APPROACH.'); }
   if (presence > .3) { beatTimer -= dt; if (beatTimer <= 0) { audio.knock(); beatTimer = 1.1 - presence * .6; } }
-  if (dist < 1.2) triggerDeath('IL PRIMO TI HA TROVATO');
+  if (dist < 1.2) triggerDeath('THE FIRST HAS FOUND YOU');
 }
 // Missions: the first unfinished one whose prerequisites are met is shown in the objective panel.
 const MISSIONS=[
@@ -2433,7 +2433,7 @@ function currentMissionText(){
 }
 
 function updateMissions() {
-  for (const m of MISSIONS) if (!seenMissions.has(m.id) && m.done()) { seenMissions.add(m.id); showToast('OBIETTIVO COMPLETATO'); }
+  for (const m of MISSIONS) if (!seenMissions.has(m.id) && m.done()) { seenMissions.add(m.id); showToast('OBJECTIVE COMPLETE'); }
   const el = $('objective-text'); const text = currentMissionText();
   if (text && el.textContent !== text) el.textContent = text;
 }
@@ -2499,7 +2499,7 @@ function addEgg(group, x, z, id, title, text) {
   root.add(buildRelicMesh(id));
   const core = new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 6), new THREE.MeshBasicMaterial({ color: 0xd9b48a })); core.position.y = .2; root.add(core);
   const light = new THREE.PointLight(0xd9b48a, .35, 2.4, 2); light.position.y = .35; root.add(light);
-  const entry = { id, type: 'egg', object: root, point: root.position, radius: 2.0, prompt: `[ E ] RACCOGLI — ${title.toUpperCase()}`, title, text, core, light };
+  const entry = { id, type: 'egg', object: root, point: root.position, radius: 2.0, prompt: `[ E ] COLLECT — ${title.toUpperCase()}`, title, text, core, light };
   eggs.push(entry); group.userData.interactables.push(entry); return entry;
 }
 function updateEggs(t) {
@@ -3517,7 +3517,7 @@ function buildCinematicExtras() {
   if (listen) {
     const pg = phonographMesh(); pg.position.set(7.2, 0, -6.4); cz.group.add(pg);
     listen.object = pg; listen.point = new THREE.Vector3(7.2, .9, -6.4); listen.radius = 2.4;
-    listen.prompt = '[ E ] ASCOLTA IL BIANCO — IN FONDO ALLA CANTINA';
+    listen.prompt = '[ E ] LISTEN TO THE WHITE — AT THE BACK OF THE CELLAR';
   }
   // Hidden details, each one a small unsettling note.
   const hz = zones.home.group;
@@ -3573,8 +3573,8 @@ function updateHorror(dt,t){
   const zoneFactor=currentZone==='cellar'?.014:currentZone==='abattoir'?(flashlightOn?.002:.009):currentZone==='ruin'?.009:0;
   fear=Math.min(1,Math.max(.04,fear+(darkFactor+zoneFactor-.002)*dt));
   // Brief, mischievous anomalies: the room seems to answer from the wrong side.
-  if(fear>.52&&eventClock>26&&Math.random()<.00075){glitchPulse=Math.max(glitchPulse,.65);audio?.mechanicalEvent('clock');showToast('TREDICI RESPIRI. UNO È FUORI TEMPO.');}
-  if(fear>.995&&currentZone==='abattoir'&&!flashlightOn){triggerDeath('LA STANZA HA OCCUPATO IL TUO CORPO.');return;}
+  if(fear>.52&&eventClock>26&&Math.random()<.00075){glitchPulse=Math.max(glitchPulse,.65);audio?.mechanicalEvent('clock');showToast('THIRTEEN BREATHS. ONE IS OUT OF TIME.');}
+  if(fear>.995&&currentZone==='abattoir'&&!flashlightOn){triggerDeath('THE ROOM HAS OCCUPIED YOUR BODY.');return;}
   if(fear>.88&&Math.random()<.0012){glitchPulse=1.15;audio?.stinger(.9);$('event-flash').classList.add('active');setTimeout(()=>$('event-flash').classList.remove('active'),130);}
   if(hiddenBreath){fear=Math.max(.08,fear-.075*dt);}
   $('fear-value').textContent=`${Math.round(fear*100)}%`;
@@ -3614,7 +3614,7 @@ function loop() {
 window.addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
 });
-window.addEventListener('error', e => { const f = $('fatal'); f.textContent = `ERRORE DI SISTEMA\n${e.message}\n${e.filename || ''}:${e.lineno || ''}`; f.classList.remove('hidden'); });
-window.addEventListener('unhandledrejection', e => { const f = $('fatal'); f.textContent = `ERRORE DI SISTEMA\n${e.reason?.stack || e.reason}`; f.classList.remove('hidden'); });
+window.addEventListener('error', e => { const f = $('fatal'); f.textContent = `SYSTEM ERROR\n${e.message}\n${e.filename || ''}:${e.lineno || ''}`; f.classList.remove('hidden'); });
+window.addEventListener('unhandledrejection', e => { const f = $('fatal'); f.textContent = `SYSTEM ERROR\n${e.reason?.stack || e.reason}`; f.classList.remove('hidden'); });
 updateProgress();
 requestAnimationFrame(loop);
