@@ -1966,7 +1966,7 @@ function chooseDialogue(npc, index) {
   glitchPulse = Math.max(glitchPulse, .28); audio.stinger(.25);
   applyConsequences(npc, index);
 }
-function closeDialogue() { dialogueOpen = false; $('subtitle-wrap').classList.remove('visible'); if('speechSynthesis' in window)window.speechSynthesis.cancel(); controls.lock(); }
+function closeDialogue(relock = true) { dialogueOpen = false; $('subtitle-wrap').classList.remove('visible'); if('speechSynthesis' in window)window.speechSynthesis.cancel(); if(relock)requestMouseLock(); }
 function openJournal() {
   if (!gameStarted || gameEnded || listeningPending || dialogueOpen) return;
   journalOpen = true; controls.unlock(); $('journal').classList.add('active'); renderJournal();
@@ -2269,7 +2269,9 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Tab' && !e.repeat && !listeningPending) { e.preventDefault(); journalOpen ? closeJournal() : openJournal(); }
   if (e.code === 'KeyE' && playerInputEnabled() && activeTarget) inspectTarget(activeTarget);
   if (dialogueOpen && (e.code === 'Digit1' || e.code === 'Digit2')) $('dialogue-options').querySelectorAll('button')[Number(e.code.slice(-1)) - 1]?.click();
-  if (dialogueOpen && e.code === 'Escape') closeDialogue();
+  // Escape exits Pointer Lock at browser level. Do not request it again in the same key event;
+  // the canvas click handler will reacquire it on the next deliberate click.
+  if (dialogueOpen && e.code === 'Escape') { e.preventDefault(); closeDialogue(false); }
 });
 window.addEventListener('keyup', e => {keys.delete(e.code);if(e.code==='KeyQ')hiddenBreath=false;});
 window.addEventListener('blur', () => { keys.clear(); hiddenBreath = false; fallbackLookDragging = false; });
@@ -3149,7 +3151,19 @@ function beginForestCar() {
 function updateStoryScene(dt, t) {
   const s = storyScene; s.t += dt;
   while (s.i < s.lines.length && s.t >= s.lines[s.i][0]) { storyLine(s.lines[s.i][1]); s.i++; }
-  if (s.type === 'hold') { if (s.t >= s.dur) storyScene = null; }
+  if (s.type === 'hold') {
+    // Keep the monologue visible for the duration of its final whispered line,
+    // then clear the subtitle independently of the remaining scene hold.
+    if (!s.subtitleHidden && s.subtitleEndAt != null && s.t >= s.subtitleEndAt) {
+      s.subtitleHidden = true;
+      clearTimeout(storyLine.timer);
+      if (!dialogueOpen) $('subtitle-wrap').classList.remove('visible');
+    }
+    if (s.t >= s.dur) {
+      storyScene = null;
+      if (!dialogueOpen) $('subtitle-wrap').classList.remove('visible');
+    }
+  }
   else if(s.type==='screening'){
     camera.position.set(0,1.68,5.8);camera.lookAt(0,2.0,-9.45);
     if(storyRef.projectorReels)storyRef.projectorReels.forEach((reel,i)=>{reel.rotation.z+=dt*(i===0?5.6:-4.9);});
@@ -3418,7 +3432,10 @@ function startIntro() {
     [40, 'The First: Good evening. You found us. I kept the light on.']] };
 }
 function endIntro() {
-  storyScene = null; $('intro-dark').style.opacity = '0';
+  storyScene = null;
+  clearTimeout(storyLine.timer);
+  $('subtitle-wrap').classList.remove('visible');
+  $('intro-dark').style.opacity = '0';
   $('objective-text').textContent = 'Reach the farmhouse gate.';
 }
 
@@ -3702,7 +3719,16 @@ const PRIMO_TIER_LINES = {
 };
 function startMonologue(lines, dur = 16) {
   if (storyScene) return;
-  storyScene = { type: 'hold', t: 0, dur, i: 0, lines: lines.map((l, k) => [1 + k * 6, l]) };
+  const lastLineAt = 1 + Math.max(0, lines.length - 1) * 6;
+  const lastLineText = lines.length ? String(lines[lines.length - 1]) : '';
+  const cleanLastLine = lastLineText.replace(/^[^:]*:\\s*/, '');
+  const lastWhisperDuration = Math.min(4.8, .9 + cleanLastLine.length * .045);
+  const subtitleEndAt = lastLineAt + lastWhisperDuration + .16;
+  storyScene = {
+    type: 'hold', t: 0, dur: Math.max(dur, subtitleEndAt), i: 0,
+    lines: lines.map((l, k) => [1 + k * 6, l]),
+    subtitleEndAt, subtitleHidden: false
+  };
 }
 // Escalation: each completed mission brings a monologue, thicker fog, a tighter vignette and more grain.
 function updateEscalation(dt) {
