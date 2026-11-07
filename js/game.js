@@ -2874,6 +2874,41 @@ function escapeForest() {
   showToast('THE CAR NEVER LEFT THE CLEARING. THE ROAD TAKES YOU BACK.');
   updateMissions();
 }
+function updateDarkroomHunt(dt,t){
+  if(currentZone!=='darkroom'||!darkroomHunt.active||storyFlags.has('darkroom-cleared')||gameEnded||dialogueOpen||journalOpen||storyScene)return;
+  const npc=storyRef.darkroomHunter;if(!npc?.object)return;
+  const p=playerAnchor.position,h=npc.object.position;
+  darkroomHunt.elapsed+=dt;darkroomHunt.reappear-=dt;
+  const dx=p.x-h.x,dz=p.z-h.z,dist=Math.hypot(dx,dz)||.001;
+  camera.getWorldDirection(camDir2);const len=Math.hypot(camDir2.x,camDir2.z)||1;
+  const dot=(camDir2.x*dx+camDir2.z*dz)/(len*dist);
+  const lampOn=flashlightOn&&dot>.78&&dist<12;
+  if(lampOn){
+    npc.object.visible=true;darkroomHunt.lastFlash=t;
+    npc.object.rotation.y=Math.atan2(dx,dz);
+    npc.object.rotation.z=Math.sin(t*.002)*.035;
+    fear=Math.max(.10,fear-.025*dt);
+    if(dist<4.5&&darkroomHunt.warning<=0){darkroomHunt.warning=4;showToast('CORRADO IS STANDING IN THE LIGHT. DO NOT LOOK AWAY.');audio?.mechanicalTone(82,42,.8,'sine',.035,0);}
+  }else{
+    npc.object.visible=t-darkroomHunt.lastFlash<240;
+    darkroomHunt.warning=Math.max(0,darkroomHunt.warning-dt);
+    if(dist>1.65){
+      const step=Math.min(dist-1.55,(.78+Math.min(.55,darkroomHunt.elapsed*.012))*dt);
+      h.x+=dx/dist*step;h.z+=dz/dist*step;
+    }
+  }
+  // When the player keeps the beam elsewhere, Corrado crosses the room without a footstep.
+  if(darkroomHunt.reappear<=0&&!lampOn&&dist>5.5){
+    const back=new THREE.Vector3(-camDir2.x,0,-camDir2.z);
+    h.set(THREE.MathUtils.clamp(p.x+back.x*(4.5+Math.random()*2),-8.6,8.6),0,THREE.MathUtils.clamp(p.z+back.z*(4.5+Math.random()*2),-10.6,10.6));
+    darkroomHunt.reappear=4.5+Math.random()*3.5;npc.object.visible=false;
+    flashFragment('collapse',95);audio?.mechanicalEvent('scrape');
+  }
+  if(dist<1.45&&!lampOn){
+    darkroomHunt.active=false;flashFragment('collapse',180);
+    triggerDeath('CORRADO FOUND YOU','You saw him only when the beam reached him. When the beam moved, he was already beside you. The room kept the rest of the recording.');return;
+  }
+}
 function storyTick(dt, t) {
   try { updatePorchPrimo(); updateAtmosphere(); updateEscalation(dt); updateCellarHunt(dt, t); updateDarkroomHunt(dt,t); updateCinematic(); } catch (err) { console.error('primo', err); }
   try {
@@ -3097,6 +3132,63 @@ function updateThirteenDemises(dt){
  v.materials.forEach(m=>{m.opacity=m.userData.baseOpacity*(1-fade);});
  v.group.scale.setScalar(.94+Math.sin(v.t*6)*.025);v.group.position.y=Math.sin(v.t*1.8)*.035;
  if(v.t>=v.duration){v.group.parent?.remove(v.group);demiseVision=null;}
+}
+function flashFragment(kind='room-tone',duration=145){
+  const c=document.createElement('canvas');c.width=640;c.height=420;
+  const g=c.getContext('2d');g.fillStyle='#090907';g.fillRect(0,0,640,420);
+  const grain=()=>{for(let i=0;i<1100;i++){g.fillStyle=Math.random()>.5?'rgba(220,210,190,.05)':'rgba(0,0,0,.15)';g.fillRect(Math.random()*640,Math.random()*420,1+Math.random()*3,1);}};
+  g.save();g.translate(320,210);g.rotate((Math.random()-.5)*.025);
+  if(kind==='heater'||kind==='dark-heater'){
+    g.fillStyle='#49453c';g.beginPath();g.moveTo(-110,-135);g.lineTo(92,-132);g.lineTo(116,100);g.lineTo(-124,105);g.closePath();g.fill();
+    g.fillStyle='#1b1c18';g.fillRect(-100,-95,200,34);for(let i=0;i<8;i++){g.strokeStyle='rgba(180,160,130,.5)';g.lineWidth=4;g.beginPath();g.moveTo(-86+i*24,-89);g.lineTo(-86+i*24,-62);g.stroke();}
+    for(let i=0;i<3;i++){g.fillStyle=['#7b3828','#a14b29','#5b3126'][i];g.beginPath();g.ellipse(-62+i*62,4,26,72,0,0,Math.PI*2);g.fill();}
+    g.strokeStyle='#b3a48a';g.lineWidth=8;g.beginPath();g.arc(0,5,137,Math.PI*1.08,Math.PI*1.92);g.stroke();
+  }else if(kind==='earplugs'||kind==='dark-earplugs'){
+    for(const x of [-78,78]){g.fillStyle='#8f6961';g.beginPath();g.ellipse(x,0,28,68,x/150,0,Math.PI*2);g.fill();g.fillStyle='#2b2420';g.beginPath();g.arc(x,-50,19,0,Math.PI*2);g.fill();}
+    g.strokeStyle='#a9926b';g.lineWidth=4;g.beginPath();g.arc(0,0,145,-1.1,1.1);g.stroke();
+    g.fillStyle='#d3c5a6';g.font='18px monospace';g.fillText('C',-6,132);
+  }else if(kind==='book'||kind==='dark-book'){
+    g.fillStyle='#4c3b2d';g.beginPath();g.moveTo(-135,-145);g.lineTo(8,-122);g.lineTo(12,146);g.lineTo(-140,120);g.closePath();g.fill();
+    g.fillStyle='#bdb39b';g.beginPath();g.moveTo(8,-122);g.lineTo(140,-145);g.lineTo(140,120);g.lineTo(12,146);g.closePath();g.fill();
+    g.strokeStyle='#5a4a39';g.lineWidth=4;for(let y=-83;y<100;y+=17){g.beginPath();g.moveTo(25,y);g.lineTo(117,y-6);g.stroke();}
+    g.fillStyle='#241b16';g.font='19px serif';g.fillText('WILL NOTHINGNESS',-116,-90);
+  }else if(kind==='reel'||kind==='dark-reel'||kind==='room-tone'){
+    for(const x of [-95,95]){g.strokeStyle='#a19a83';g.lineWidth=10;g.beginPath();g.arc(x,-10,74,0,Math.PI*2);g.stroke();g.strokeStyle='#4c4b42';g.lineWidth=5;g.beginPath();g.arc(x,-10,44,0,Math.PI*2);g.stroke();g.fillStyle='#1e201c';g.beginPath();g.arc(x,-10,15,0,Math.PI*2);g.fill();for(let i=0;i<6;i++){const a=i*Math.PI/3;g.strokeStyle='#7e796b';g.lineWidth=7;g.beginPath();g.moveTo(x,-10);g.lineTo(x+Math.cos(a)*58,-10+Math.sin(a)*58);g.stroke();}}
+    g.strokeStyle='#b4a88b';g.lineWidth=3;g.beginPath();g.moveTo(-18,-3);g.lineTo(-4,28);g.lineTo(13,28);g.lineTo(23,-2);g.stroke();
+  }else if(kind==='report'||kind==='dark-report'){
+    g.fillStyle='#b6aa8d';g.fillRect(-120,-155,240,310);g.strokeStyle='#64584a';g.lineWidth=2;
+    for(let y=-105;y<95;y+=24){g.beginPath();g.moveTo(-90,y);g.lineTo(89,y);g.stroke();}
+    g.fillStyle='#7e1d18';g.font='bold 31px monospace';g.translate(4,12);g.rotate(-.22);g.fillText('03:17',-62,0);g.restore();g.save();g.translate(320,210);
+  }else if(kind==='script'||kind==='dark-script'){
+    g.strokeStyle='#a79a80';g.lineWidth=8;g.lineCap='round';
+    for(let i=0;i<14;i++){const x=-220+i*33;g.beginPath();g.moveTo(x,-110+(i%3)*17);g.lineTo(x+12,80-(i%4)*20);g.lineTo(x+24,-60+(i%5)*13);g.stroke();}
+    g.strokeStyle='#8c241f';g.lineWidth=5;g.beginPath();g.arc(0,0,156,0,Math.PI*2);g.stroke();
+  }else if(kind==='tea'){
+    g.fillStyle='#c8b79a';g.beginPath();g.ellipse(0,42,120,27,0,0,Math.PI*2);g.fill();
+    g.fillStyle='#e1d8c4';g.beginPath();g.moveTo(-85,-46);g.quadraticCurveTo(-82,95,-26,84);g.lineTo(61,84);g.quadraticCurveTo(107,52,85,-46);g.closePath();g.fill();
+    g.strokeStyle='#bfb29a';g.lineWidth=13;g.beginPath();g.arc(91,9,42,-1.2,1.5);g.stroke();
+    g.fillStyle='#29211c';g.beginPath();g.ellipse(0,-44,84,17,0,0,Math.PI*2);g.fill();
+    g.strokeStyle='#61241f';g.lineWidth=5;g.beginPath();g.moveTo(-12,-8);g.lineTo(-2,58);g.stroke();
+  }else if(kind==='collapse'){
+    g.strokeStyle='#9a8a76';g.lineWidth=18;g.beginPath();g.moveTo(-15,-150);g.lineTo(-6,-36);g.lineTo(-78,86);g.stroke();
+    g.fillStyle='#a69a86';g.beginPath();g.ellipse(-20,-165,44,62,-.2,0,Math.PI*2);g.fill();
+    g.strokeStyle='#4e2621';g.lineWidth=5;g.beginPath();g.moveTo(-10,-120);g.lineTo(45,125);g.stroke();
+  }else if(kind==='nosebleed'){
+    g.fillStyle='#a99b89';g.beginPath();g.ellipse(0,-4,95,142,0,0,Math.PI*2);g.fill();
+    g.fillStyle='#17110e';g.beginPath();g.ellipse(-35,-24,17,12,0,0,Math.PI*2);g.ellipse(35,-24,17,12,0,0,Math.PI*2);g.fill();
+    g.strokeStyle='#791b19';g.lineWidth=9;g.beginPath();g.moveTo(5,5);g.bezierCurveTo(18,45,-24,63,-13,136);g.stroke();
+  }else{
+    g.fillStyle='#a79b84';g.beginPath();g.ellipse(0,-14,91,128,-.08,0,Math.PI*2);g.fill();
+    g.fillStyle='#080808';g.beginPath();g.ellipse(-30,-24,19,12,0,0,Math.PI*2);g.ellipse(30,-24,19,12,0,0,Math.PI*2);g.fill();
+    g.strokeStyle='#17100e';g.lineWidth=18;g.beginPath();g.moveTo(-68,145);g.quadraticCurveTo(0,0,72,144);g.stroke();
+  }
+  g.restore();grain();
+  const el=document.createElement('div');
+  el.style.cssText='position:fixed;inset:0;z-index:70;pointer-events:none;background:rgba(0,0,0,.18) center/cover no-repeat;mix-blend-mode:screen;opacity:.92;filter:contrast(1.5) sepia(.35);';
+  el.style.backgroundImage='url('+c.toDataURL('image/png')+')';
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),45);},Math.max(65,duration));
+  glitchPulse=Math.max(glitchPulse,.45);return el;
 }
 function jumpscare() {
   const el = document.createElement('div');
