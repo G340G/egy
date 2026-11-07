@@ -3721,7 +3721,7 @@ function startMonologue(lines, dur = 16) {
   if (storyScene) return;
   const lastLineAt = 1 + Math.max(0, lines.length - 1) * 6;
   const lastLineText = lines.length ? String(lines[lines.length - 1]) : '';
-  const cleanLastLine = lastLineText.replace(/^[^:]*:\\s*/, '');
+  const cleanLastLine = lastLineText.replace(/^[^:]*:\s*/, '');
   const lastWhisperDuration = Math.min(4.8, .9 + cleanLastLine.length * .045);
   const subtitleEndAt = lastLineAt + lastWhisperDuration + .16;
   storyScene = {
