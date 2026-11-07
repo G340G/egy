@@ -288,7 +288,7 @@ function refreshPhotoNPC(npc){const key=npc.photoKey,image=PHOTO_IMAGES[key];if(
 
 function profileForNPC(name,variant){
  const n=(name||'').toLowerCase();
- if(['ines','anna','marta','vanda','ada','mirella','teresa','livia','woman by the canal','the widow','la donna','la vedova'].some(v=>n.includes(v)))return 'woman';
+ if(['ines','anna','marta','vanda','ada','mirella','teresa','livia','woman by the canal','the widow'].some(v=>n.includes(v)))return 'woman';
  if(n.includes('father remo')||n.includes('don remo')||n.includes('the first')||n.includes('the first')||n.includes('dario')||n.includes('sergio')||n.includes('pino')||n.includes('franco')||n.includes('walter')||n.includes('gabri')||n.includes('elio'))return 'man';
  if(n.includes('ottavio')||n.includes('the coat')||n.includes('the coat'))return 'oldman';
  return variant===0?'woman':'oldman';
@@ -943,8 +943,8 @@ function triggerKillScene() {
   if(scenePlayed || !zones.church) return;
   scenePlayed=true;
   const z=zones.church;
-  // Never create replacement extras: Pino and Dario are two of the thirteen.
-  const victim=cultRoster.find(n=>n.name==='Pino'&&['present','queued'].includes(n.fate));
+  // Never create replacement extras: Walter and Dario are two of the thirteen.
+  const victim=cultRoster.find(n=>n.name==='Walter'&&['present','queued'].includes(n.fate));
   const executioner=cultRoster.find(n=>n.name==='Dario'&&['present','queued'].includes(n.fate));
   if(!victim || !executioner){
     storyFlags.add('empty-choir');
@@ -1153,8 +1153,8 @@ function buildRoad() {
   addBox(z.group, -4.5, 1.32, 20, .7, .09, .58, M.darkWood);
   addClueMesh(z.group,new THREE.Vector3(-4.0,.83,19.7),'The 1977 Newspaper','A local clipping reports thirteen people found dead in a country church during the winter of 1977. Beside the bodies, a tape recorder was still running. The newspaper does not name the record.','clipping','paper');
   // A wet-coated figure at the bridge, more like a stain than a person.
-  const woman = makeNPC(z.group, -31, -3, 'La donna al canale', 0x242a28, 1);
-  woman.prompt = '[ E ] PARLA — LA DONNA AL CANALE';
+  const woman = makeNPC(z.group,-31,-3,'The Woman by the Canal',0x242a28,1);
+  woman.prompt = '[ E ] SPEAK — THE WOMAN BY THE CANAL';
   woman.dialogue = {
     line:'The water does not flow toward the sea. It flows toward the day it was poured.',
     choices:['What happened here?','I do not know you.'], 
