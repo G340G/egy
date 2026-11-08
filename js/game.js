@@ -1644,7 +1644,7 @@ class AmbientSound {
       element.currentTime = 0;
       const result = element.play();
       if (result && typeof result.then === 'function') {
-        result.then(() => this.fadeMusicTrack(track, track.targetVolume, 1.25, false))
+        result.then(() => { if (track.active && this.activeMusic === track) this.fadeMusicTrack(track, track.targetVolume, 1.25, false); })
           .catch(error => console.warn('Music loop could not restart:', name, error));
       } else this.fadeMusicTrack(track, track.targetVolume, 1.25, false);
     });
@@ -1699,7 +1699,7 @@ class AmbientSound {
     }
     const result = track.element.play();
     if (result && typeof result.then === 'function') {
-      result.then(() => this.fadeMusicTrack(track, track.targetVolume, fadeIn, false))
+      result.then(() => { if (track.active && this.activeMusic === track) this.fadeMusicTrack(track, track.targetVolume, fadeIn, false); })
         .catch(() => { /* Browsers may block title autoplay until the first user gesture. */ });
     } else this.fadeMusicTrack(track, track.targetVolume, fadeIn, false);
   }
@@ -2303,6 +2303,7 @@ function startGame() {
   enterZone('road', [0, 0, 29]);
   startIntro();
   $('hud').classList.remove('hidden-hud');
+  audio.playMusic('carnex', { loop: true, fadeIn: 2.2 });
   audio.start().catch(() => {});
   requestMouseLock();
 }
