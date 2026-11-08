@@ -1619,8 +1619,9 @@ class AmbientSound {
     this.nodes = []; this.ready = false; this.zoneGain=null; this.pulseGain=null; this.currentZone='road';
     this.musicTracks = {
       mysterious: this.createMusicTrack('mysterious', './assets/mysterious.m4a', .48),
-      // The second uploaded score is stored in the repository as drone.m4a; this is the Carnex outdoor cue.
-      carnex: this.createMusicTrack('carnex', './assets/drone.m4a', .36)
+      fort: this.createMusicTrack('fort', './assets/fort.mp3', .44),
+      dot: this.createMusicTrack('dot', './assets/dot.mp3', .42),
+      zero: this.createMusicTrack('zero', './assets/zero.mp3', .42)
     };
     this.activeMusic = null;
   }
@@ -1797,8 +1798,17 @@ class AmbientSound {
     const vals={road:.055,forest:.07,home:.11,church:.16,ruin:.20,cellar:.28,darkroom:.30,abattoir:.32};
     this.zoneGain.gain.setTargetAtTime(vals[name]??.1,this.ctx.currentTime,1.8);
     this.noiseGain.gain.setTargetAtTime(({road:.13,forest:.14,home:.2,church:.17,ruin:.26,cellar:.32,darkroom:.34,abattoir:.38})[name]??.18,this.ctx.currentTime,1.5);
-    if (gameStarted && !gameEnded && (name==='road' || name==='forest')) this.playMusic('carnex', {loop:true,fadeIn:2.2});
-    else if (this.activeMusic?.name==='carnex') this.stopMusic('carnex',2.0);
+
+    // Music follows the location and the story phase. The cellar gets its own
+    // score only on the return after The First's tea scene, before the final listen.
+    let desiredTrack = null;
+    if (!gameEnded && (name === 'road' || name === 'forest')) desiredTrack = 'mysterious';
+    else if (!gameEnded && name === 'abattoir') desiredTrack = 'fort';
+    else if (!gameEnded && name === 'darkroom') desiredTrack = 'zero';
+    else if (!gameEnded && name === 'cellar' && storyFlags.has('first-tea') && !storyFlags.has('listened-to-white')) desiredTrack = 'dot';
+
+    if (desiredTrack) this.playMusic(desiredTrack, {loop:true,fadeIn:2.2});
+    else if (this.activeMusic) this.stopMusic(this.activeMusic.name,2.0);
   }
   powerSurge(){if(!this.ctx)return;const t=this.ctx.currentTime;const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(38,t);o.frequency.exponentialRampToValueAtTime(430,t+.35);o.frequency.exponentialRampToValueAtTime(27,t+1.1);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.04);g.gain.exponentialRampToValueAtTime(.0001,t+1.3);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+1.35);}
   bell(){if(!this.ctx)return;const t=this.ctx.currentTime;[73.4,110,146.8,221].forEach((f,i)=>{const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.12/(i+1),t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+5+i);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+6+i);});}
@@ -2102,6 +2112,7 @@ function beginListening(){
   if(!storyFlags.has('first-tea')){showToast('THE FIRST IS STILL IN THE SLAUGHTERHOUSE. ASK HIM ABOUT THE EARPLUGS.');return;}
   if(!storyFlags.has('carcasses-decided')){showToast('THE BODIES ARE STILL WAITING. DECIDE WHAT TO DO WITH THE HOOKS FIRST.');return;}
   storyFlags.add('listened-to-white');
+  audio?.stopMusic('dot', 2.4);
   if (listeningPending || gameEnded) return;
   // Lock the player inside the listening room. Every remaining cultist is brought
   // into view and receives a visible fate before the ending choices are revealed.
@@ -2329,7 +2340,7 @@ function startGame() {
   enterZone('road', [0, 0, 29]);
   startIntro();
   $('hud').classList.remove('hidden-hud');
-  audio.playMusic('carnex', { loop: true, fadeIn: 2.2 });
+  audio.playMusic('mysterious', { loop: true, fadeIn: 2.2 });
   audio.start().catch(() => {});
   requestMouseLock();
 }
