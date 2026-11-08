@@ -1651,27 +1651,53 @@ class AmbientSound {
     element.addEventListener('error', () => console.warn('Music file could not be loaded:', src, element.error));
     return track;
   }
+  safeMusicVolume(track, value) {
+    if (!track?.element) return;
+    const safeValue = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
+    try {
+      track.element.volume = safeValue;
+    } catch (error) {
+      // A browser or OS audio restriction must never interrupt gameplay.
+      console.warn('Could not set music volume:', track.name, error);
+      track.active = false;
+      track.loop = false;
+      track.element.pause();
+      if (this.activeMusic === track) this.activeMusic = null;
+    }
+  }
   fadeMusicTrack(track, target, duration = 1.6, pauseWhenDone = false) {
-    if (!track) return;
+    if (!track?.element) return;
     const element = track.element;
-    const from = element.volume;
-    const to = muted ? 0 : THREE.MathUtils.clamp(target, 0, 1);
+    const rawFrom = Number(element.volume);
+    const from = Number.isFinite(rawFrom) ? Math.min(1, Math.max(0, rawFrom)) : 0;
+    const rawTarget = muted ? 0 : Number(target);
+    const to = Number.isFinite(rawTarget) ? Math.min(1, Math.max(0, rawTarget)) : 0;
+    const rawDuration = Number(duration);
+    const seconds = Number.isFinite(rawDuration) ? Math.max(0, rawDuration) : 0;
     const token = ++track.fadeToken;
     const started = performance.now();
-    const seconds = Math.max(0, duration);
     if (seconds <= .02) {
-      element.volume = to;
-      if (pauseWhenDone && to === 0) { element.pause(); element.currentTime = 0; track.active = false; }
+      this.safeMusicVolume(track, to);
+      if (pauseWhenDone && to === 0) {
+        element.pause();
+        try { element.currentTime = 0; } catch (_) {}
+        track.active = false;
+        track.fadeAtEnd = false;
+        if (this.activeMusic === track) this.activeMusic = null;
+      }
       return;
     }
     const tick = now => {
-      if (token !== track.fadeToken) return;
-      const k = Math.min(1, (now - started) / (seconds * 1000));
-      element.volume = from + (to - from) * k;
-      if (k < 1) track.fadeFrame = requestAnimationFrame(tick);
+      if (token !== track.fadeToken || !track.active && !pauseWhenDone) return;
+      const stamp = Number.isFinite(now) ? now : performance.now();
+      const rawK = (stamp - started) / (seconds * 1000);
+      const k = Number.isFinite(rawK) ? Math.min(1, Math.max(0, rawK)) : 1;
+      const value = from + (to - from) * k;
+      this.safeMusicVolume(track, value);
+      if (k < 1 && (track.active || pauseWhenDone)) track.fadeFrame = requestAnimationFrame(tick);
       else if (pauseWhenDone && to === 0) {
         element.pause();
-        element.currentTime = 0;
+        try { element.currentTime = 0; } catch (_) {}
         track.active = false;
         track.fadeAtEnd = false;
         if (this.activeMusic === track) this.activeMusic = null;
