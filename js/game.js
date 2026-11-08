@@ -76,6 +76,7 @@ let flashlightOn = true;
 let audio = null;
 let muted = false;
 let elapsed = 0;
+let footstepDistance = 0, footstepSide = 0;
 let dread = 0.12;
 let glitchPulse = 0;
 let toastTimer = null;
@@ -316,6 +317,10 @@ const M = {
   warmLight: mat(0x332112, .35, { emissive: 0xffb65c, emissiveIntensity: 2.4 }),
   clue: mat(0x9e8152, .65, { emissive: 0x6e4c27, emissiveIntensity: .48 })
 };
+const CLUE_TEXTURE = new THREE.TextureLoader().load('./assets/clue.png', texture => {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+}, undefined, error => console.warn('Could not load clue artwork:', error));
 function addBox(group, x, y, z, w, h, d, material, options = {}) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
   mesh.position.set(x, y, z); mesh.castShadow = options.castShadow !== false; mesh.receiveShadow = options.receiveShadow !== false;
@@ -372,17 +377,16 @@ function makeEvidenceCanvas(title, id, imageKey='oldman') {
 }
 function addClueMesh(group, pos, title, description, id, kind = 'paper', options = {}) {
   const root = new THREE.Group(); root.position.copy(pos); group.add(root); let object;
-  const imageKey=({clipping:'oldman',mass:'elder',photo:'man',voicemail:'woman'})[id]||'oldman';
   if (kind === 'paper') {
-    object = new THREE.Mesh(new THREE.PlaneGeometry(.62, .43), new THREE.MeshStandardMaterial({ map: makeEvidenceCanvas(title,id,imageKey), side: THREE.DoubleSide, roughness: .96 }));
+    object = new THREE.Mesh(new THREE.PlaneGeometry(.62, .43), new THREE.MeshStandardMaterial({ map: CLUE_TEXTURE, side: THREE.DoubleSide, roughness: .96 }));
     object.rotation.x = -Math.PI / 2; object.rotation.z = -.12; object.position.y = .065;
     const curled=addBox(root,.28,.06,.17,.055,.018,.34,M.wood,{rotation:[0,0,.12],castShadow:false});
   } else if (kind === 'metal') {
     object = new THREE.Mesh(new THREE.CylinderGeometry(.085, .085, .55, 16), M.gold); object.rotation.z = Math.PI / 2; object.position.y = .16;
-    const tag=new THREE.Mesh(new THREE.PlaneGeometry(.28,.19),new THREE.MeshBasicMaterial({map:makeEvidenceCanvas(title,id,imageKey),side:THREE.DoubleSide}));tag.position.set(0,.23,.13);root.add(tag);
+    const tag=new THREE.Mesh(new THREE.PlaneGeometry(.28,.19),new THREE.MeshBasicMaterial({map:CLUE_TEXTURE,side:THREE.DoubleSide}));tag.position.set(0,.23,.13);root.add(tag);
   } else {
     object = new THREE.Mesh(new THREE.BoxGeometry(.34, .07, .25), M.wood); object.position.y = .06;
-    const plate=new THREE.Mesh(new THREE.PlaneGeometry(.36,.25),new THREE.MeshBasicMaterial({map:makeEvidenceCanvas(title,id,imageKey),side:THREE.DoubleSide}));plate.rotation.x=-Math.PI/2;plate.position.y=.105;root.add(plate);
+    const plate=new THREE.Mesh(new THREE.PlaneGeometry(.36,.25),new THREE.MeshBasicMaterial({map:CLUE_TEXTURE,side:THREE.DoubleSide}));plate.rotation.x=-Math.PI/2;plate.position.y=.105;root.add(plate);
   }
   root.add(object);
   const glow = new THREE.PointLight(0xd5b27b, .23, 2.5); glow.position.y = .5; root.add(glow);
@@ -1440,7 +1444,7 @@ function buildAbattoir() {
   const overhead=addLight(z.group,0xe1d4b4,1.4,13,0,3.8,1.3);overhead.position.y=3.7;
   // The room contains manifestos that contradict each other, by design.
   // The cult leader is hidden at the far end; his face is turned away until spoken to.
-  const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI;if(leader.head)leader.head.material=headMaterial();leader.object.visible=false;storyRef.corrado=leader;leader.dialogue={line:'Man would rather will nothingness than not will. The room was not empty; we were taking up too much space.',choices:['Remove the tape.','Give me your place.'],replies:['There is no tape to remove. The machine turns without a reel.','The place is not mine. It is what remains when you give up your name.']};
+  const leader=makeNPC(z.group,0,-7.2,'The First',0x171716,1);leader.object.rotation.y=Math.PI;if(leader.head)leader.head.material=headMaterial();leader.object.visible=false;storyRef.first=leader;leader.dialogue={line:'Man would rather will nothingness than not will. The room was not empty; we were taking up too much space.',choices:['Remove the tape.','Give me your place.'],replies:['There is no tape to remove. The machine turns without a reel.','The place is not mine. It is what remains when you give up your name.']};
   const eventMarker=new THREE.Mesh(new THREE.BoxGeometry(.34,.14,.34),M.clue);eventMarker.position.set(0,.12,1.7);z.group.add(eventMarker);
   z.interactables.push({id:'abattoir_ropes',type:'event',object:eventMarker,point:eventMarker.position,radius:3.0,prompt:'[ E ] CHOOSE WHAT TO DO WITH THE HOOKS',run:()=>{
     controls.unlock();dialogueOpen=true;$('speaker').textContent='THE ROOM / THE FOUR BODIES';$('subtitle').textContent='The chains are under tension. A voice comes from the floor: “If you free them, the room is left without witnesses. If you leave them, you become part of the inventory.” When you look again, one of the bodies has changed position.';speakVoice($('subtitle').textContent,'THE ROOM');$('subtitle-wrap').classList.add('visible');
@@ -1541,7 +1545,7 @@ function buildDarkroom(){
   const heaterPoint=new THREE.Vector3(-7.4,1.15,8.8);
   addLoreProp(z,'dark-heater','The radiant heater','A portable LPG radiant heater: perforated steel hood, ceramic burner panels, a lower guard and four small castors. The gas hose is still attached. A maintenance tag reads: FLUE / AIR INTAKE — BLOCKED. The report never names carbon monoxide. It records a room that was not ventilated, thirteen bodies and a clock stopped at 03:17.','dark-heater',heater,heaterPoint,'[ E ] EXAMINE THE HEATER');
   const plugCase=buildEarplugCase(z.group,6.1,.78,3.1);
-  addLoreProp(z,'dark-earplugs','The earplug case','A small brass case contains two soft wax plugs. The lid is engraved with a single initial: C. A note inside says: “Wear them before the first revolution. Stay to watch.” Corrado watched every collapse and never had to hear one.','dark-earplugs',plugCase,new THREE.Vector3(6.1,1.05,3.1),'[ E ] OPEN THE EARPLUG CASE');
+  addLoreProp(z,'dark-earplugs','The earplug case','A small brass case contains two soft wax plugs. The lid is engraved with a single initial: C. A note inside says: “Wear them before the first revolution. Stay to watch.” The First watched every collapse and never had to hear one.','dark-earplugs',plugCase,new THREE.Vector3(6.1,1.05,3.1),'[ E ] OPEN THE EARPLUG CASE');
   const book=buildPaperback(z.group,-1.7,.77,-1.8);
   addLoreProp(z,'dark-book','The paperback','A battered Nietzsche paperback. It is almost entirely underlined. The margins contain only durations: 4.2 seconds, 7.1 seconds, 11 seconds. “Man would rather will nothingness than not will.” The sentence is copied as an instruction. No sentence in the book tells anyone to push.','dark-book',book,new THREE.Vector3(-1.7,1.0,-1.8),'[ E ] READ THE PAPERBACK');
   const recorder=buildReelRecorder(z.group,-1.8,0,-8.6);
@@ -1568,8 +1572,8 @@ function buildDarkroom(){
   returnDoor.prompt='[ E ] RETURN TO THE CELLAR';
   z.mist=addFog(z.group,18,26,0x151613,156);z.fog=new THREE.FogExp2(z.fogColor,z.density);
   z.solids.push({minX:-10,maxX:-9.7,minZ:-12,maxZ:12},{minX:9.7,maxX:10,minZ:-12,maxZ:12},{minX:-10,maxX:-1.4,minZ:11.7,maxZ:12},{minX:1.4,maxX:10,minZ:11.7,maxZ:12},{minX:-10,maxX:10,minZ:-12.2,maxZ:-12});
-  // Corrado is a moving absence. The light catches him; the dark lets him move.
-  const hunter=makeNPC(z.group,7.7,-9.5,'Corrado',0x171614,1);
+  // The First is a moving absence. The light catches him; the dark lets him move.
+  const hunter=makeNPC(z.group,7.7,-9.5,'The First',0x171614,1);
   const idx=z.interactables.findIndex(item=>item===hunter);if(idx>=0)z.interactables.splice(idx,1);
   hunter.object.visible=false;hunter.object.scale.set(.92,1.04,.86);hunter.object.rotation.y=Math.PI;
   hunter.dialogue={line:'You found the room. It was waiting before you were born.',choices:['What is on the tape?','Why are you following me?'],replies:['The same thing that was here before the tape: a room.','I am not following you. I am keeping the distance at which you can still choose.']};
@@ -1590,6 +1594,7 @@ const EVIDENCE_SAVE_KEY = 'epistassi-evidence-v1';
 clearSavedEvidence();
 
 function enterZone(name, spawn) {
+  footstepDistance = 0;
   Object.values(zones).forEach(v => { v.group.visible = false; });
   zone = zones[name]; currentZone = name; zone.group.visible = true;
   playerAnchor.position.set(spawn[0], 0, spawn[2]);
@@ -1598,7 +1603,7 @@ function enterZone(name, spawn) {
   scene.fog = zone.fog || new THREE.FogExp2(zone.fogColor, zone.density);
   scene.background.set(zone.fogColor);
   $('location').textContent = ({ road: 'FOG ROAD', home: 'THE HOUSE / THIRTEEN PLACES', church: 'THE DECONSECRATED CHURCH', ruin: 'THE EMPTY HOUSE', cellar: 'THE CELLAR / 14-B', darkroom: 'THE DARK ROOM / 14-B', abattoir: 'THE SLAUGHTERHOUSE / THE VOID ROOM', forest: 'THE CANAL FOREST' })[name];
-  glitchPulse = Math.max(glitchPulse, .42); audio?.stinger(.32); audio?.setZone(name); if(name==='abattoir'){fear=Math.min(1,fear+.19);audio?.mechanicalEvent('hoist');} if(name==='church' && collected.size>=2 && !scenePlayed) showToast('THE BELL ROPE IS WET.'); if(name==='cellar'||name==='darkroom'){fear=Math.min(1,fear+.18);} if(name==='darkroom'){darkroomHunt.active=!TEST_NO_ENEMIES&&!storyFlags.has('darkroom-cleared');if(TEST_NO_ENEMIES&&storyRef.darkroomHunter?.object)storyRef.darkroomHunter.object.visible=false;if(!storyFlags.has('darkroom-entered')){storyFlags.add('darkroom-entered');darkroomHunt.elapsed=0;darkroomHunt.reappear=3.2;startMonologue(['Corrado: The lamp is not a weapon. It is a question you can only ask in one direction.','Voice: The room is full. You cannot see what it contains.','Corrado: Find what the tape cannot carry. Do not mistake being watched for being seen.'],13);}}
+  glitchPulse = Math.max(glitchPulse, .42); audio?.stinger(.32); audio?.setZone(name); if(name==='abattoir'){fear=Math.min(1,fear+.19);audio?.mechanicalEvent('hoist');} if(name==='church' && collected.size>=2 && !scenePlayed) showToast('THE BELL ROPE IS WET.'); if(name==='cellar'||name==='darkroom'){fear=Math.min(1,fear+.18);} if(name==='darkroom'){darkroomHunt.active=!TEST_NO_ENEMIES&&!storyFlags.has('darkroom-cleared');if(TEST_NO_ENEMIES&&storyRef.darkroomHunter?.object)storyRef.darkroomHunter.object.visible=false;if(!storyFlags.has('darkroom-entered')){storyFlags.add('darkroom-entered');darkroomHunt.elapsed=0;darkroomHunt.reappear=3.2;startMonologue(['The First: The lamp is not a weapon. It is a question you can only ask in one direction.','Voice: The room is full. You cannot see what it contains.','The First: Find what the tape cannot carry. Do not mistake being watched for being seen.'],13);}}
   showToast(({ road: 'THE ROAD IS NOT WHERE YOU LEFT IT', home: 'NO ONE ASKED YOUR NAME', church: 'THE NAVE IS LONGER FROM THE INSIDE', ruin: 'SOMEONE IS WAITING BY THE TELEPHONE', cellar: 'THE ROOM HAS KEPT ITS HEAT', darkroom: 'THE DARK HAS BEEN ARRANGED BY HAND', forest: 'THE FOREST KEEPS YOUR POSITION', abattoir: 'HERE THE FLESH HAS A LONG MEMORY' })[name]);
   placeStalker(name); showChapterCard(name);
 }
@@ -1609,7 +1614,105 @@ function playerInputEnabled() { return gameStarted && !gameEnded && !listeningPe
 // Sound: entirely synthesised, layered and intentionally non-musical.
 // -----------------------------------------------------------------------------
 class AmbientSound {
-  constructor() { this.ctx = null; this.master = null; this.noiseGain = null; this.droneGain = null; this.nodes = []; this.ready = false; this.zoneGain=null; this.pulseGain=null; this.currentZone='road'; }
+  constructor() {
+    this.ctx = null; this.master = null; this.noiseGain = null; this.droneGain = null;
+    this.nodes = []; this.ready = false; this.zoneGain=null; this.pulseGain=null; this.currentZone='road';
+    this.musicTracks = {
+      mysterious: this.createMusicTrack('mysterious', './assets/mysterious.m4a', .48),
+      // The second uploaded score is stored in the repository as drone.m4a; this is the Carnex outdoor cue.
+      carnex: this.createMusicTrack('carnex', './assets/drone.m4a', .36)
+    };
+    this.activeMusic = null;
+  }
+  createMusicTrack(name, src, targetVolume) {
+    const element = new Audio(src);
+    element.preload = 'auto';
+    element.volume = 0;
+    const track = { name, element, targetVolume, active: false, loop: true, fadeAtEnd: false, fadeToken: 0, loopFade: 1.8 };
+    element.addEventListener('timeupdate', () => {
+      if (!track.active || !track.loop || track.fadeAtEnd || !Number.isFinite(element.duration)) return;
+      const remaining = element.duration - element.currentTime;
+      const fade = Math.min(track.loopFade, Math.max(.45, element.duration * .065));
+      if (remaining <= fade && remaining > .04) {
+        track.fadeAtEnd = true;
+        this.fadeMusicTrack(track, 0, remaining, false);
+      }
+    });
+    element.addEventListener('ended', () => {
+      if (!track.active || !track.loop) return;
+      track.fadeAtEnd = false;
+      element.currentTime = 0;
+      const result = element.play();
+      if (result && typeof result.then === 'function') {
+        result.then(() => this.fadeMusicTrack(track, track.targetVolume, 1.25, false))
+          .catch(error => console.warn('Music loop could not restart:', name, error));
+      } else this.fadeMusicTrack(track, track.targetVolume, 1.25, false);
+    });
+    element.addEventListener('error', () => console.warn('Music file could not be loaded:', src, element.error));
+    return track;
+  }
+  fadeMusicTrack(track, target, duration = 1.6, pauseWhenDone = false) {
+    if (!track) return;
+    const element = track.element;
+    const from = element.volume;
+    const to = muted ? 0 : THREE.MathUtils.clamp(target, 0, 1);
+    const token = ++track.fadeToken;
+    const started = performance.now();
+    const seconds = Math.max(0, duration);
+    if (seconds <= .02) {
+      element.volume = to;
+      if (pauseWhenDone && to === 0) { element.pause(); element.currentTime = 0; track.active = false; }
+      return;
+    }
+    const tick = now => {
+      if (token !== track.fadeToken) return;
+      const k = Math.min(1, (now - started) / (seconds * 1000));
+      element.volume = from + (to - from) * k;
+      if (k < 1) track.fadeFrame = requestAnimationFrame(tick);
+      else if (pauseWhenDone && to === 0) {
+        element.pause();
+        element.currentTime = 0;
+        track.active = false;
+        track.fadeAtEnd = false;
+        if (this.activeMusic === track) this.activeMusic = null;
+      }
+    };
+    track.fadeFrame = requestAnimationFrame(tick);
+  }
+  playMusic(name, { loop = true, fadeIn = 2.0 } = {}) {
+    const track = this.musicTracks[name];
+    if (!track) return;
+    if (this.activeMusic === track && !track.element.paused) return;
+    const previous = this.activeMusic;
+    if (previous && previous !== track) {
+      previous.active = false;
+      previous.loop = false;
+      previous.fadeAtEnd = false;
+      this.fadeMusicTrack(previous, 0, 2.0, true);
+    }
+    track.active = true;
+    track.loop = loop;
+    track.fadeAtEnd = false;
+    this.activeMusic = track;
+    if (track.element.ended || track.element.currentTime >= (Number.isFinite(track.element.duration) ? track.element.duration : Infinity)) {
+      track.element.currentTime = 0;
+    }
+    const result = track.element.play();
+    if (result && typeof result.then === 'function') {
+      result.then(() => this.fadeMusicTrack(track, track.targetVolume, fadeIn, false))
+        .catch(() => { /* Browsers may block title autoplay until the first user gesture. */ });
+    } else this.fadeMusicTrack(track, track.targetVolume, fadeIn, false);
+  }
+  playTitleMusic() { this.playMusic('mysterious', { loop: true, fadeIn: 2.2 }); }
+  stopMusic(name, fadeOut = 1.8) {
+    const track = this.musicTracks[name];
+    if (!track) return;
+    track.active = false;
+    track.loop = false;
+    track.fadeAtEnd = false;
+    if (this.activeMusic === track) this.activeMusic = null;
+    this.fadeMusicTrack(track, 0, fadeOut, true);
+  }
   async start() {
     if (this.ready) return;
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
@@ -1662,7 +1765,15 @@ class AmbientSound {
     o.connect(f); f.connect(g); g.connect(this.master); o.start(t); o.stop(t + .72);
   }
   setTension(v) { if (this.droneGain && this.ctx) {this.droneGain.gain.setTargetAtTime(.10 + v * .25, this.ctx.currentTime, .7); if(this.pulseGain)this.pulseGain.gain.setTargetAtTime(.018+v*.10,this.ctx.currentTime,.8);} }
-  setZone(name){if(!this.ready||!this.ctx)return;this.currentZone=name;const vals={road:.055,home:.11,church:.16,ruin:.20,cellar:.28,abattoir:.32};this.zoneGain.gain.setTargetAtTime(vals[name]??.1,this.ctx.currentTime,1.8);this.noiseGain.gain.setTargetAtTime(({road:.13,home:.2,church:.17,ruin:.26,cellar:.32,abattoir:.38})[name]??.18,this.ctx.currentTime,1.5);}
+  setZone(name){
+    if(!this.ready||!this.ctx)return;
+    this.currentZone=name;
+    const vals={road:.055,forest:.07,home:.11,church:.16,ruin:.20,cellar:.28,darkroom:.30,abattoir:.32};
+    this.zoneGain.gain.setTargetAtTime(vals[name]??.1,this.ctx.currentTime,1.8);
+    this.noiseGain.gain.setTargetAtTime(({road:.13,forest:.14,home:.2,church:.17,ruin:.26,cellar:.32,darkroom:.34,abattoir:.38})[name]??.18,this.ctx.currentTime,1.5);
+    if (gameStarted && !gameEnded && (name==='road' || name==='forest')) this.playMusic('carnex', {loop:true,fadeIn:2.2});
+    else if (this.activeMusic?.name==='carnex') this.stopMusic('carnex',2.0);
+  }
   powerSurge(){if(!this.ctx)return;const t=this.ctx.currentTime;const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(38,t);o.frequency.exponentialRampToValueAtTime(430,t+.35);o.frequency.exponentialRampToValueAtTime(27,t+1.1);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.04);g.gain.exponentialRampToValueAtTime(.0001,t+1.3);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+1.35);}
   bell(){if(!this.ctx)return;const t=this.ctx.currentTime;[73.4,110,146.8,221].forEach((f,i)=>{const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.12/(i+1),t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+5+i);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+6+i);});}
   killSting(){if(!this.ctx)return;const t=this.ctx.currentTime;const o=this.ctx.createOscillator(),g=this.ctx.createGain(),f=this.ctx.createBiquadFilter();o.type='sawtooth';o.frequency.setValueAtTime(260,t);o.frequency.exponentialRampToValueAtTime(24,t+2.6);f.type='lowpass';f.frequency.value=500;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.38,t+.08);g.gain.exponentialRampToValueAtTime(.0001,t+3);o.connect(f);f.connect(g);g.connect(this.master);o.start(t);o.stop(t+3.1);}
@@ -1676,6 +1787,30 @@ class AmbientSound {
     const gain=this.ctx.createGain();gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(volume,t+Math.min(.035,duration*.28));gain.gain.setTargetAtTime(volume*.55,t+Math.min(.08,duration*.5),Math.max(.025,duration*.18));gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
     const stereo=this.ctx.createStereoPanner?this.ctx.createStereoPanner():this.ctx.createGain();if(stereo.pan)stereo.pan.value=pan;
     src.connect(filter);filter.connect(gain);gain.connect(stereo);stereo.connect(this.master);src.start(t);src.stop(t+duration+.04);
+  }
+  footstep(surface='grass', sprinting=false, side=0) {
+    if (!this.ctx || !this.ready || muted) return;
+    const t=this.ctx.currentTime, wood=surface==='wood', grass=surface==='grass';
+    const duration=wood?.19:grass?.24:.16, length=Math.ceil(this.ctx.sampleRate*duration);
+    const buffer=this.ctx.createBuffer(1,length,this.ctx.sampleRate), data=buffer.getChannelData(0);
+    const decay=grass?3.4:wood?2.2:2.8;
+    for(let i=0;i<length;i++){const env=Math.pow(1-i/length,decay);data[i]=(Math.random()*2-1)*env*(grass?.72:1);}
+    const src=this.ctx.createBufferSource();src.buffer=buffer;
+    const filter=this.ctx.createBiquadFilter();
+    filter.type=grass?'bandpass':'lowpass';
+    filter.frequency.value=grass?1050:wood?720:1450;
+    filter.Q.value=grass?0.65:wood?0.8:1.15;
+    const gain=this.ctx.createGain(), pan=this.ctx.createStereoPanner?this.ctx.createStereoPanner():this.ctx.createGain();
+    const volume=(grass?.085:wood?.13:.105)*(sprinting?1.15:1);
+    gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(volume,t+.012);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    if(pan.pan)pan.pan.value=side%2===0?-.12:.12;
+    src.connect(filter);filter.connect(gain);gain.connect(pan);pan.connect(this.master);src.start(t);src.stop(t+duration+.025);
+    if(wood||!grass){
+      const osc=this.ctx.createOscillator(),body=this.ctx.createGain();
+      osc.type='sine';osc.frequency.setValueAtTime(wood?108:155,t);osc.frequency.exponentialRampToValueAtTime(wood?58:82,t+.11);
+      body.gain.setValueAtTime(.0001,t);body.gain.exponentialRampToValueAtTime(wood?.045:.028,t+.009);body.gain.exponentialRampToValueAtTime(.0001,t+.145);
+      osc.connect(body);body.connect(this.master);osc.start(t);osc.stop(t+.16);
+    }
   }
   mechanicalTone(start=180,end=65,duration=1.2,type='sine',volume=.075,pan=0){
     if(!this.ctx||!this.ready||muted)return;const t=this.ctx.currentTime,o=this.ctx.createOscillator(),f=this.ctx.createBiquadFilter(),g=this.ctx.createGain();
@@ -1743,9 +1878,21 @@ class AmbientSound {
     src.connect(bp); bp.connect(hp); hp.connect(g); g.connect(pn); pn.connect(this.master);
     src.start(t); src.stop(t + duration + .05);
   }
-  toggle() { muted = !muted; if (this.master && this.ctx) this.master.gain.setTargetAtTime(muted ? 0 : .62, this.ctx.currentTime, .08); $('sound-button').innerHTML = muted ? 'MUTED <b>[M]</b>' : 'SOUND <b>[M]</b>'; }
+  toggle() {
+    muted = !muted;
+    if (this.master && this.ctx) this.master.gain.setTargetAtTime(muted ? 0 : .62, this.ctx.currentTime, .08);
+    Object.values(this.musicTracks).forEach(track => {
+      if (muted) this.fadeMusicTrack(track,0,.12,false);
+      else if (track.active) this.fadeMusicTrack(track,track.targetVolume,.28,false);
+    });
+    $('sound-button').innerHTML = muted ? 'MUTED <b>[M]</b>' : 'SOUND <b>[M]</b>';
+  }
 }
 audio = new AmbientSound();
+audio.playTitleMusic();
+const unlockTitleMusic = () => { if (!gameStarted && audio.activeMusic?.name === 'mysterious' && audio.activeMusic.element.paused) audio.playTitleMusic(); };
+window.addEventListener('pointerdown', unlockTitleMusic, { passive: true });
+window.addEventListener('keydown', unlockTitleMusic);
 
 // -----------------------------------------------------------------------------
 // Dialogue, journal, clues and interaction state
@@ -1926,7 +2073,7 @@ function beginListening(){
   if(collected.size<clueCount){showToast('THE PLATTER IS EMPTY. COLLECT ALL EIGHT CLUES.');return;}
   if(!storyFlags.has('altar-lit')){showToast('THE ALTAR IS STILL DARK. LIGHT ALL THREE CANDLES FIRST.');return;}
   if(!storyFlags.has('darkroom-cleared')){showToast('THE DARK ROOM HAS NOT BEEN SEARCHED. FIND THE SIX RECORDS OF WHAT HAPPENED.');return;}
-  if(!storyFlags.has('corrado-tea')){showToast('THE FIRST IS STILL IN THE SLAUGHTERHOUSE. ASK HIM ABOUT THE EARPLUGS.');return;}
+  if(!storyFlags.has('first-tea')){showToast('THE FIRST IS STILL IN THE SLAUGHTERHOUSE. ASK HIM ABOUT THE EARPLUGS.');return;}
   if(!storyFlags.has('carcasses-decided')){showToast('THE BODIES ARE STILL WAITING. DECIDE WHAT TO DO WITH THE HOOKS FIRST.');return;}
   storyFlags.add('listened-to-white');
   if (listeningPending || gameEnded) return;
@@ -2094,6 +2241,11 @@ function findTarget() {
   }
   return best;
 }
+function footstepSurfaceForZone(name) {
+  if (name === 'road' || name === 'forest') return 'grass';
+  if (name === 'home' || name === 'ruin') return 'wood';
+  return 'stone';
+}
 function updatePlayer(dt) {
   if (!playerInputEnabled()) return;
   const sprinting=keys.has('ShiftLeft') || keys.has('ShiftRight'); const speed = sprinting ? 5.3 : 3.15; if(sprinting&&wishVec.lengthSq()>.1)fear=Math.min(1,fear+dt*.012);
@@ -2106,11 +2258,17 @@ function updatePlayer(dt) {
   velocity.x += (wishVec.x * speed - velocity.x) * Math.min(1, dt * 7.5);
   velocity.z += (wishVec.z * speed - velocity.z) * Math.min(1, dt * 7.5);
   if (wishVec.lengthSq() === 0) { velocity.x *= Math.max(0, 1 - dt * 5); velocity.z *= Math.max(0, 1 - dt * 5); }
-  const p = currentPosition(); const nx = p.x + velocity.x * dt; const nz = p.z + velocity.z * dt;
+  const p = currentPosition(), previousX = p.x, previousZ = p.z; const nx = p.x + velocity.x * dt; const nz = p.z + velocity.z * dt;
   const b = zone.bounds; const r = .34;
   const collides = (x, z) => zone.solids.some(o => x + r > o.minX && x - r < o.maxX && z + r > o.minZ && z - r < o.maxZ);
   if (nx >= b.minX && nx <= b.maxX && !collides(nx, p.z)) p.x = nx; else velocity.x = 0;
   if (nz >= b.minZ && nz <= b.maxZ && !collides(p.x, nz)) p.z = nz; else velocity.z = 0;
+  const moved = Math.hypot(p.x-previousX,p.z-previousZ);
+  if (moved > .001 && audio?.ready) {
+    footstepDistance += moved;
+    const stride = sprinting ? 1.12 : 1.34;
+    while (footstepDistance >= stride) { footstepDistance -= stride; audio.footstep(footstepSurfaceForZone(currentZone),sprinting,footstepSide++); }
+  } else if (moved < .001 && wishVec.lengthSq() === 0) footstepDistance = 0;
   const moving = Math.abs(velocity.x) + Math.abs(velocity.z) > .5;
   camera.position.y = 1.63 + (moving ? Math.sin(elapsed * 9.2) * .023 : Math.sin(elapsed * 1.4) * .006);
 }
@@ -2445,8 +2603,8 @@ function currentMissionText(){
  if(currentZone==='abattoir'&&!storyFlags.has('carcasses-decided'))return 'DECIDE WHAT TO DO WITH THE HANGING BODIES.';
  if(currentZone==='darkroom'&&!storyFlags.has('darkroom-cleared'))return 'SEARCH THE DARK ROOM — '+darkroomFindCount()+' / 6. Keep the beam moving.';
  if(storyFlags.has('altar-lit')&&!storyFlags.has('darkroom-cleared'))return currentZone==='cellar'?'THE SIDE DOOR IS OPEN. SEARCH THE DARK ROOM FOR THE SIX RECORDS.':'RETURN TO THE CELLAR. THE SIDE DOOR HAS OPENED.';
- if(storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))return currentZone==='abattoir'?'SPEAK WITH THE FIRST AGAIN. ASK HIM ABOUT THE SOUND HE REFUSED TO HEAR.':'RETURN TO THE SLAUGHTERHOUSE. THE FIRST IS WAITING BESIDE THE HOOKS.';
-  if(storyFlags.has('corrado-tea')&&!storyFlags.has('listened-to-white'))return currentZone==='cellar'?'RETURN TO THE BLANK PLATTER. THE ROOM HAS BEEN RECORDED.':'THE BLANK PLATTER IS WAITING IN THE CELLAR.';
+ if(storyFlags.has('darkroom-cleared')&&!storyFlags.has('first-tea'))return currentZone==='abattoir'?'SPEAK WITH THE FIRST AGAIN. ASK HIM ABOUT THE SOUND HE REFUSED TO HEAR.':'RETURN TO THE SLAUGHTERHOUSE. THE FIRST IS WAITING BESIDE THE HOOKS.';
+  if(storyFlags.has('first-tea')&&!storyFlags.has('listened-to-white'))return currentZone==='cellar'?'RETURN TO THE BLANK PLATTER. THE ROOM HAS BEEN RECORDED.':'THE BLANK PLATTER IS WAITING IN THE CELLAR.';
  if(currentZone==='home'&&!storyFlags.has('talked-ines'))return 'Speak with Ines before examining the Seating List.';
  if(currentZone==='home'&&!storyFlags.has('talked-ottavio'))return 'Speak with Ottavio before examining the Tuning Fork.';
  if(currentZone==='church'&&!storyFlags.has('talked-remo'))return 'Speak with Don Remo before examining the Mass Register.';
@@ -2497,7 +2655,7 @@ function applyConsequences(npc, index) {
   if (key === 'the first' && npc.isOpeningPrimo) { storyFlags.add('met-primo'); storyFlags.add('primo-first-contact'); }
   else if (key === 'the first') { const d = primoDialogue(); d.actions?.[index]?.(); }
   applyChoiceEffect(key,index,npc);
-  if(key==='the first'&&npc===storyRef.corrado&&storyFlags.has('darkroom-cleared')&&!storyFlags.has('corrado-tea'))startCorradoTeaScene(npc);
+  if(key==='the first'&&npc===storyRef.first&&storyFlags.has('darkroom-cleared')&&!storyFlags.has('first-tea'))startFirstTeaScene(npc);
   if (storyFlags.has('primo-alerted')) placeStalker(currentZone);
   updateMissions();
 }
@@ -2828,8 +2986,8 @@ function buildForest() {
 // The First: friendly on the surface, and every task he gives brings the new arrival closer to the void.
 function primoDialogue(){
   const f=storyFlags;
-  if(f.has('darkroom-cleared')&&!f.has('corrado-tea'))return{line:'You read the margins. The sentence about willing nothingness is printed. The timings are mine. I added one line beneath them: “What is falling must also be pushed.” Those are not instructions for falling. They are the seconds I watched after each body stopped moving. You found the earplugs, too.',choices:['Why did you wear them?','Did you ever hear The White?'],replies:['I wanted the image without the sound. Sound makes a fall belong to someone. An image can be kept.','I heard the reels turn. I heard the room when the motor stopped. I never heard an album.'],actions:[()=>storyFlags.add('corrado-questioned'),()=>storyFlags.add('corrado-questioned')]};
-  if(f.has('corrado-tea'))return{line:'The cup was warm. The room was not. You keep looking for the moment I fell, but you have already watched it. The sound came later.',choices:['Who is left in the house?','What was The White?'],replies:['The person who pours. The person who opens the door. The person who arrives.','A room that kept being mistaken for a song. That is all I can tell you now.'],actions:[()=>storyFlags.add('ines-survivor-seen'),()=>storyFlags.add('white-questioned')]};
+  if(f.has('darkroom-cleared')&&!f.has('first-tea'))return{line:'You read the margins. The sentence about willing nothingness is printed. The timings are mine. I added one line beneath them: “What is falling must also be pushed.” Those are not instructions for falling. They are the seconds I watched after each body stopped moving. You found the earplugs, too.',choices:['Why did you wear them?','Did you ever hear The White?'],replies:['I wanted the image without the sound. Sound makes a fall belong to someone. An image can be kept.','I heard the reels turn. I heard the room when the motor stopped. I never heard an album.'],actions:[()=>storyFlags.add('first-questioned'),()=>storyFlags.add('first-questioned')]};
+  if(f.has('first-tea'))return{line:'The cup was warm. The room was not. You keep looking for the moment I fell, but you have already watched it. The sound came later.',choices:['Who is left in the house?','What was The White?'],replies:['The person who pours. The person who opens the door. The person who arrives.','A room that kept being mistaken for a song. That is all I can tell you now.'],actions:[()=>storyFlags.add('ines-survivor-seen'),()=>storyFlags.add('white-questioned')]};
   if(f.has('escaped-forest'))return{line:'You came back. I thought you might. There is a particular way a person walks after seeing the place where they would disappear. You do not have to tell me what you saw.',choices:['I want to leave.','Why did you bring me there?'],replies:['Of course. I would never keep you. The door is open; you only have to decide which side of it you are on.','I wanted you to hear the trees without the village speaking over them. You heard something. That is not the same as understanding it.'],actions:[()=>storyFlags.add('primo-leave'),()=>storyFlags.add('primo-questioned')]};
   if(f.has('primo-task-dig')&&f.has('primo-task-candles'))return{line:'The album is almost ready. You have done more than I asked, and I am grateful. But you have started looking at the doors instead of the rooms. That usually means a person is close to deciding.',choices:['Take me to the car.','I want to leave.','What do you need from me?'],replies:['Good. We can speak where the walls cannot interrupt. The forest is quieter than this room.','Then go. I will not follow. I only hope you do not mistake the road for an answer.','Nothing you do not already know how to give. A little attention. A little space. Your name, perhaps, if you still feel it belongs to you.'],actions:[()=>{storyFlags.add('car-invited');pendingCar=true;},()=>storyFlags.add('primo-leave'),()=>storyFlags.add('primo-questioned')]};
   if(f.has('met-primo'))return{line:'You remember the lamp. I was glad to see you reach it. You looked relieved when I spoke to you. People rarely notice how much they need that small kindness until it is offered.',choices:['You made this place feel safe.','You knew I was coming.','Why are you helping me?'],replies:['I wanted you to feel there was somewhere to return to. A person will walk a very long way if they believe someone has noticed their arrival.','I knew the letter would find you. I did not know what you would bring with you. That part is always your own.','Because carrying yourself everywhere is exhausting. I thought you might want to set something down.'],actions:[()=>storyFlags.add('primo-trust'),()=>storyFlags.add('primo-suspicion'),()=>storyFlags.add('primo-questioned')]};
@@ -2845,32 +3003,32 @@ function buildTeacup(group,x,y,z){
   const handle=new THREE.Mesh(new THREE.TorusGeometry(.105,.025,7,20,Math.PI*1.55),porcelain);handle.position.set(.16,.20,0);handle.rotation.z=-.6;root.add(handle);
   const saucer=new THREE.Mesh(new THREE.TorusGeometry(.19,.025,6,24),porcelain);saucer.rotation.x=Math.PI/2;saucer.position.y=.02;root.add(saucer);return root;
 }
-function startCorradoTeaScene(primo){
-  if(primo!==storyRef.corrado||storyFlags.has('corrado-tea')||storyScene||gameEnded)return;
+function startFirstTeaScene(primo){
+  if(primo!==storyRef.first||storyFlags.has('first-tea')||storyScene||gameEnded)return;
   const ines=cultRoster.find(n=>n.name==='Ines');
   if(!ines||ines.fate!=='present'){triggerDeath('THE TEA NEVER CAME','Ines was no longer there to pour it. The room had lost the one person who knew how to make an ending gentle.');return;}
-  storyFlags.add('corrado-tea-started');keys.clear();controls.unlock();dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');
+  storyFlags.add('first-tea-started');keys.clear();controls.unlock();dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');
   const z=zones.abattoir;const old=z.interactables.indexOf(primo);if(old>=0)z.interactables.splice(old,1);primo.object.visible=true;
   if(ines.object.parent!==z.group)transferCultist(ines,z,-2.4,-5.35);else ines.object.position.set(-2.4,0,-5.35);
   ines.point=ines.object.position;ines.object.rotation.y=.72;primo.object.position.set(0,0,-7.15);primo.object.rotation.y=Math.PI;
-  const cup=buildTeacup(z.group,-.78,.015,-5.95);storyRef.corradoCup=cup;
-  const thermos=buildThermos(z.group,-2.6,0,-5.0);thermos.scale.setScalar(.72);storyRef.corradoThermos=thermos;
-  storyScene={type:'corrado-tea',t:0,dur:17,i:0,leader:primo,ines,cup,collapsed:false,sound:false,lines:[
+  const cup=buildTeacup(z.group,-.78,.015,-5.95);storyRef.firstCup=cup;
+  const thermos=buildThermos(z.group,-2.6,0,-5.0);thermos.scale.setScalar(.72);storyRef.firstThermos=thermos;
+  storyScene={type:'first-tea',t:0,dur:17,i:0,leader:primo,ines,cup,collapsed:false,sound:false,lines:[
     [.7,'Tobia: She crosses the room with the thermos. Nobody asks her to.'],
     [3.4,'Ines: You have watched so many things fall. You must be tired.'],
-    [6.4,'Corrado: I kept the image. I wore the plugs so the sound could not make a claim on me.'],
-    [9.3,'Tobia: The cup touches the table. Corrado watches the dust settle.'],
+    [6.4,'The First: I kept the image. I wore the plugs so the sound could not make a claim on me.'],
+    [9.3,'Tobia: The cup touches the table. The First watches the dust settle.'],
     [11.1,'Ines: Someone has to make it gentle.'],
     [14.1,'Voice: The sound arrives late. The man is already gone.']
   ]};
 }
-function endCorradoTeaScene(){
-  const s=storyScene;if(!s||s.type!=='corrado-tea')return;
+function endFirstTeaScene(){
+  const s=storyScene;if(!s||s.type!=='first-tea')return;
   const primo=s.leader,ines=s.ines;
   if(primo){primo.fate='dead';primo.object.visible=false;}
   if(ines){ines.talkedOnce=true;ines.fate='present';ines.object.visible=true;}
-  storyFlags.add('corrado-tea');storyFlags.add('corrado-dead');storyFlags.add('institution-survives');
-  journal.push({id:'corrado-tea',title:'The cup at 03:17',description:'Ines poured tea for Corrado as he watched dust settle. The image of his fall arrived before its sound. She stayed. The house still had someone to open the door.',kind:'witness account',zone:'abattoir'});updateJournalCount();updateMissions();
+  storyFlags.add('first-tea');storyFlags.add('first-dead');storyFlags.add('institution-survives');
+  journal.push({id:'first-tea',title:'The cup at 03:17',description:'Ines poured tea for The First as he watched dust settle. The image of his fall arrived before its sound. She stayed. The house still had someone to open the door.',kind:'witness account',zone:'abattoir'});updateJournalCount();updateMissions();
   storyScene=null;dialogueOpen=false;$('subtitle-wrap').classList.remove('visible');camera.position.set(0,1.63,0);camera.rotation.set(0,0,0);
   showToast('THE FIRST IS GONE. CLICK THE SCENE TO LOOK AROUND.');
 }
@@ -3067,7 +3225,7 @@ function updateStoryScene(dt, t) {
     if(s.t>=11.3&&!s.sound){s.sound=true;audio?.mechanicalNoise(.34,360,1.1,.18,0);audio?.mechanicalTone(84,32,1.8,'sawtooth',.09,0);audio?.killSting();}
     if(s.t>=s.dur)endPinoCombineScene();
   }
-  else if(s.type==='corrado-tea'){
+  else if(s.type==='first-tea'){
     const leader=s.leader,ines=s.ines,k=THREE.MathUtils.smoothstep(s.t,0,s.dur);
     camera.position.set(-1.2+.22*Math.sin(s.t*.35),1.8,-3.25-.65*k);camera.lookAt(-.2,1.28,-6.35);
     if(ines){ines.object.rotation.y=.68+Math.sin(s.t*1.2)*.018;ines.object.position.x=-2.4+THREE.MathUtils.smoothstep(s.t,1,4)*1.2;}
@@ -3075,7 +3233,7 @@ function updateStoryScene(dt, t) {
     if(leader&&s.t>=9.9&&!s.collapsed){s.collapsed=true;leader.object.rotation.x=1.38;leader.object.rotation.z=.12;leader.object.position.y=-.22;flashFragment('tea',185);glitchPulse=Math.max(glitchPulse,1.45);}
     if(leader&&s.t>=12.1)leader.object.visible=false;
     if(s.t>=14.1&&!s.sound){s.sound=true;audio?.mechanicalNoise(.22,2400,6,.12,.15);audio?.mechanicalTone(96,34,1.2,'sawtooth',.08,-.1);audio?.killSting();}
-    if(s.t>=s.dur)endCorradoTeaScene();
+    if(s.t>=s.dur)endFirstTeaScene();
   }
   else if (s.type === 'finale') { updateFinale(s, dt); } else if (s.type === 'intro') {
     const k = THREE.MathUtils.smoothstep(s.t, 0, s.dur);
@@ -3156,7 +3314,7 @@ function updateDarkroomHunt(dt,t){
     npc.object.rotation.y=Math.atan2(dx,dz);
     npc.object.rotation.z=Math.sin(t*.002)*.035;
     fear=Math.max(.10,fear-.025*dt);
-    if(dist<4.5&&darkroomHunt.warning<=0){darkroomHunt.warning=4;showToast('CORRADO IS STANDING IN THE LIGHT. DO NOT LOOK AWAY.');audio?.mechanicalTone(82,42,.8,'sine',.035,0);}
+    if(dist<4.5&&darkroomHunt.warning<=0){darkroomHunt.warning=4;showToast('THE FIRST IS STANDING IN THE LIGHT. DO NOT LOOK AWAY.');audio?.mechanicalTone(82,42,.8,'sine',.035,0);}
   }else{
     npc.object.visible=t-darkroomHunt.lastFlash<240;
     darkroomHunt.warning=Math.max(0,darkroomHunt.warning-dt);
@@ -3165,7 +3323,7 @@ function updateDarkroomHunt(dt,t){
       h.x+=dx/dist*step;h.z+=dz/dist*step;
     }
   }
-  // When the player keeps the beam elsewhere, Corrado crosses the room without a footstep.
+  // When the player keeps the beam elsewhere, The First crosses the room without a footstep.
   if(darkroomHunt.reappear<=0&&!lampOn&&dist>5.5){
     const back=new THREE.Vector3(-camDir2.x,0,-camDir2.z);
     h.set(THREE.MathUtils.clamp(p.x+back.x*(4.5+Math.random()*2),-8.6,8.6),0,THREE.MathUtils.clamp(p.z+back.z*(4.5+Math.random()*2),-10.6,10.6));
@@ -3174,7 +3332,7 @@ function updateDarkroomHunt(dt,t){
   }
   if(dist<1.45&&!lampOn){
     darkroomHunt.active=false;flashFragment('collapse',180);
-    triggerDeath('CORRADO FOUND YOU','You saw him only when the beam reached him. When the beam moved, he was already beside you. The room kept the rest of the recording.');return;
+    triggerDeath('THE FIRST FOUND YOU','You saw him only when the beam reached him. When the beam moved, he was already beside you. The room kept the rest of the recording.');return;
   }
 }
 function storyTick(dt, t) {
